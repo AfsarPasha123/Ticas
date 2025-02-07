@@ -1,0 +1,53 @@
+{
+  "name": "space-management-api",
+  "version": "1.0.0",
+  "description": "API for managing spaces",
+  "type": "module",
+  "main": "dist/app.js",
+  "scripts": {
+    "start": "node --experimental-specifier-resolution=node dist/app.js",
+    "dev": "cross-env NODE_ENV=development node --loader ts-node/esm src/app.ts",
+    "build": "tsc",
+    "test": "cross-env NODE_ENV=test mocha -r ts-node/register tests/**/*.test.ts",
+    "start:dev": "cross-env NODE_ENV=development npm start",
+    "start:test": "cross-env NODE_ENV=test npm start",
+    "start:prod": "cross-env NODE_ENV=production npm start",
+    "db:init:dev": "cross-env NODE_ENV=development node --no-warnings --loader ts-node/esm src/database/initDb.ts",
+    "db:init:test": "cross-env NODE_ENV=test node --no-warnings --loader ts-node/esm src/database/initDb.ts",
+    "db:init:prod": "cross-env NODE_ENV=production node --no-warnings --loader ts-node/esm src/database/initDb.ts",
+    "db:reinit": "cross-env NODE_ENV=development node --no-warnings --loader ts-node/esm src/database/reinitDb.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.741.0",
+    "@aws-sdk/s3-request-presigner": "^3.741.0",
+    "@types/cors": "^2.8.17",
+    "@types/multer": "^1.4.12",
+    "@types/sequelize": "^4.28.20",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.5.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.12.0",
+    "sequelize": "^6.37.5"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/chai": "^4.3.5",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.8",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "^20.17.16",
+    "@types/sinon": "^10.0.16",
+    "chai": "^4.3.7",
+    "chai-http": "^4.4.0",
+    "cross-env": "^7.0.3",
+    "mocha": "^10.2.0",
+    "nodemon": "^3.0.3",
+    "sinon": "^15.2.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  }
+}
