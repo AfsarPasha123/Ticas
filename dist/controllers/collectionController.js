@@ -1,7 +1,7 @@
 import { Collection } from '../models/Collection.js';
 import { Product } from '../models/index.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES, RESPONSE_TYPES } from '../constants/responseConstants.js';
-import { Op } from 'sequelize';
+import { sequelize } from '../database/connection.js';
 // Create a new collection
 export const createCollection = async (req, res) => {
     try {
@@ -120,11 +120,7 @@ export const getCollectionProducts = async (req, res) => {
             });
         }
         const products = await Product.findAll({
-            where: {
-                collection_ids: {
-                    [Op.contains]: [collection_id]
-                }
-            }
+            where: sequelize.literal(`JSON_CONTAINS(collection_ids, '${collection_id}')`)
         });
         return res.status(HTTP_STATUS.OK).json({
             type: RESPONSE_TYPES.SUCCESS,

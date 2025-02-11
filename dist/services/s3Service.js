@@ -9,8 +9,23 @@ const s3Client = new S3Client({
     // 2. AWS CLI credentials
     // 3. EC2/ECS/Lambda instance metadata
 });
+// Log the current AWS credentials
+s3Client.config.credentials().then(creds => {
+    console.log('AWS Credentials loaded:', {
+        accessKeyId: creds.accessKeyId,
+        expiration: creds.expiration,
+        type: creds.constructor.name
+    });
+}).catch(error => {
+    console.error('Error loading AWS credentials:', error);
+});
 export const uploadToS3 = async (file, key) => {
     try {
+        console.log('Starting S3 upload:', {
+            key,
+            contentType: file.mimetype,
+            size: file.size
+        });
         if (!file.buffer) {
             throw new Error('File buffer is missing');
         }
@@ -20,42 +35,77 @@ export const uploadToS3 = async (file, key) => {
             Body: file.buffer,
             ContentType: file.mimetype
         };
+        console.log('Sending PutObject command to S3:', {
+            bucket: params.Bucket,
+            key: params.Key,
+            contentType: params.ContentType
+        });
         await s3Client.send(new PutObjectCommand(params));
-        return `https://${config.aws.bucketName}.s3.${config.aws.region}.amazonaws.com/${key}`;
+        const url = `https://${config.aws.bucketName}.s3.${config.aws.region}.amazonaws.com/${key}`;
+        console.log('S3 upload successful:', {
+            url,
+            key
+        });
+        return url;
     }
     catch (error) {
         console.error('S3 upload error:', {
             error,
-            message: error instanceof Error ? error.message : 'Unknown error',
+            key,
             bucket: config.aws.bucketName,
-            region: config.aws.region,
-            key
+            region: config.aws.region
         });
         throw error;
     }
 };
 export const getSignedDownloadUrl = async (key) => {
-    const command = new GetObjectCommand({
-        Bucket: config.aws.bucketName,
-        Key: key
-    });
     try {
-        return await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+        console.log('Getting signed URL for:', {
+            key,
+            bucket: config.aws.bucketName
+        });
+        const command = new GetObjectCommand({
+            Bucket: config.aws.bucketName,
+            Key: key,
+        });
+        const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+        console.log('Generated signed URL:', {
+            key,
+            expiresIn: '1 hour'
+        });
+        return url;
     }
     catch (error) {
-        console.error('Error generating signed URL:', error);
+        console.error('Error generating signed URL:', {
+            error,
+            key,
+            bucket: config.aws.bucketName
+        });
         throw error;
     }
 };
 export const deleteFromS3 = async (key) => {
     try {
-        await s3Client.send(new DeleteObjectCommand({
+        console.log('Deleting object from S3:', {
+            key,
+            bucket: config.aws.bucketName
+        });
+        const command = new DeleteObjectCommand({
             Bucket: config.aws.bucketName,
-            Key: key
-        }));
+            Key: key,
+        });
+        await s3Client.send(command);
+        console.log('Successfully deleted object from S3:', {
+            key,
+            bucket: config.aws.bucketName
+        });
     }
     catch (error) {
-        console.error('Error deleting from S3:', error);
+        console.error('Error deleting from S3:', {
+            error,
+            key,
+            bucket: config.aws.bucketName
+        });
         throw error;
     }
 };

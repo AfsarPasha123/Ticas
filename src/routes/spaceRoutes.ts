@@ -10,7 +10,7 @@ const router: Router = express.Router();
 router.use(authenticateToken as RequestHandler);
 
 // Test S3 access
-router.get('/test-s3', async (req, res) => {
+router.get('/test-s3', async (_req, res) => {
     try {
         const s3Client = new S3Client({
             region: process.env.AWS_REGION || 'us-east-1'

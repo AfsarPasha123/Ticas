@@ -4,11 +4,9 @@ interface ProductAttributes {
     product_name: string;
     description: string;
     primary_image_url?: string;
-    secondary_image_url?: string[];
     price: number;
     owner_id: number;
     space_id?: number;
-    status?: 'Pending' | 'Completed' | 'Cancelled';
     collection_ids?: number[];
     created_at?: Date;
     updated_at?: Date;
