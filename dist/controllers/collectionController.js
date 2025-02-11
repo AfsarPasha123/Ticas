@@ -1,7 +1,7 @@
 import { Collection } from '../models/Collection.js';
 import { Product } from '../models/index.js';
 import { sequelize, QueryTypes } from '../models/index.js';
-import '../types';
+
 // Create a new collection
 export const createCollection = async (req, res) => {
     console.log('Create Collection Request Received');
