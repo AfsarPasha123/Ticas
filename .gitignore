@@ -17,12 +17,6 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
-# Environment files
-.env
-.env.development
-.env.production
-.env.test
-
 # Sensitive configuration
 *.pem
 *.key
