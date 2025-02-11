@@ -1,11 +1,17 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { HTTP_STATUS, RESPONSE_MESSAGES, RESPONSE_TYPES } from '../constants/responseConstants.js';
+import { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
+import {
+  HTTP_STATUS,
+  RESPONSE_MESSAGES,
+  RESPONSE_TYPES,
+} from "../constants/responseConstants.js";
 
 export interface AuthenticatedRequest extends Request {
-  user?: {
+  user: {
     id: number;
     email: string;
+    user_id: number; // Adjusted to match expected type
+    username: string;
   };
 }
 
@@ -15,19 +21,24 @@ export const authenticateToken = async (
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
 
     if (!token) {
       return res.status(HTTP_STATUS.UNAUTHORIZED).json({
         status: RESPONSE_TYPES.ERROR,
-        message: RESPONSE_MESSAGES.AUTH.TOKEN_REQUIRED
+        message: RESPONSE_MESSAGES.AUTH.TOKEN_REQUIRED,
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "your-secret-key"
+    ) as {
       id: number;
       email: string;
+      user_id: number;
+      username: string;
     };
 
     req.user = decoded;
@@ -35,7 +46,7 @@ export const authenticateToken = async (
   } catch (error) {
     return res.status(HTTP_STATUS.UNAUTHORIZED).json({
       status: RESPONSE_TYPES.ERROR,
-      message: RESPONSE_MESSAGES.AUTH.INVALID_TOKEN
+      message: RESPONSE_MESSAGES.AUTH.INVALID_TOKEN,
     });
   }
 };

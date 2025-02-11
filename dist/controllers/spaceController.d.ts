@@ -1,6 +1,6 @@
-import { Response } from 'express';
-import { AuthenticatedRequest } from '../middleware/authMiddleware.js';
-import multer from 'multer';
+import { Response } from "express";
+import { AuthenticatedRequest } from "../middleware/authMiddleware.js";
+import multer from "multer";
 export declare const upload: multer.Multer;
 interface SpaceRequest extends AuthenticatedRequest {
     body: {
