@@ -2,12 +2,13 @@ import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } fro
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import config from '../config/environment.js';
 
+// Use default credential provider
 const s3Client = new S3Client({
     region: config.aws.region,
-    credentials: {
-        accessKeyId: config.aws.accessKeyId,
-        secretAccessKey: config.aws.secretAccessKey
-    }
+    // This will automatically use:
+    // 1. Environment variables
+    // 2. AWS CLI credentials
+    // 3. EC2/ECS/Lambda instance metadata
 });
 
 export const uploadToS3 = async (file: Express.Multer.File, key: string): Promise<string> => {

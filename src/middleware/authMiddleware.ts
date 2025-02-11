@@ -17,10 +17,17 @@ export const authenticateToken = async (
   res: Response,
   next: NextFunction
 ): Promise<Response | void> => {
+  console.log('Authentication Middleware Triggered');
+  console.log('Request Headers:', req.headers);
+  
   const authHeader = req.headers['authorization'];
+  console.log('Authorization Header:', authHeader);
+  
   const token = authHeader && authHeader.split(' ')[1];
+  console.log('Extracted Token:', token);
 
   if (!token) {
+    console.error('No token provided');
     return res.status(HTTP_STATUS.UNAUTHORIZED).json({
       status: RESPONSE_TYPES.ERROR,
       message: RESPONSE_MESSAGES.AUTH.TOKEN_REQUIRED
@@ -34,6 +41,8 @@ export const authenticateToken = async (
       username: string;
     };
 
+    console.log('Decoded Token:', decoded);
+
     // Verify that the user exists in the database
     const user = await User.findByPk(decoded.user_id);
     if (!user) {
@@ -44,19 +53,22 @@ export const authenticateToken = async (
       });
     }
 
-    console.log('User authenticated:', {
+    // Attach user to request
+    req.user = {
       user_id: decoded.user_id,
       email: decoded.email,
       username: decoded.username
-    });
+    };
 
-    req.user = decoded;
+    console.log('User authenticated successfully:', req.user);
+    
     next();
   } catch (error) {
     console.error('Token verification error:', error);
     return res.status(HTTP_STATUS.UNAUTHORIZED).json({
       status: RESPONSE_TYPES.ERROR,
-      message: RESPONSE_MESSAGES.AUTH.INVALID_TOKEN
+      message: 'Invalid or expired token',
+      error: String(error)
     });
   }
 };

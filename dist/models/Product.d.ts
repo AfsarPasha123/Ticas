@@ -11,8 +11,10 @@ interface ProductAttributes {
     status?: 'Pending' | 'Completed' | 'Cancelled';
     collection_ids?: number[];
     created_at?: Date;
+    updated_at?: Date;
 }
 interface ProductModel extends Model<ProductAttributes>, ProductAttributes {
 }
+export declare const Product: (sequelize: Sequelize, DataTypes: any) => ModelStatic<ProductModel>;
 export declare const initProductModel: (sequelize: Sequelize) => ModelStatic<ProductModel>;
 export type { ProductAttributes, ProductModel };

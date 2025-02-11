@@ -1,30 +1,30 @@
 import { DataTypes } from 'sequelize';
-export const initProductModel = (sequelize) => {
-    const Product = sequelize.define('Product', {
+export const Product = (sequelize, DataTypes) => {
+    return sequelize.define('Product', {
         product_id: {
             type: DataTypes.INTEGER,
-            autoIncrement: true,
             primaryKey: true,
+            autoIncrement: true,
         },
         product_name: {
-            type: DataTypes.STRING(255),
+            type: DataTypes.STRING,
             allowNull: false,
         },
         description: {
             type: DataTypes.TEXT,
-            allowNull: true,
+            allowNull: false,
         },
         primary_image_url: {
-            type: DataTypes.TEXT,
-            allowNull: true,
+            type: DataTypes.STRING,
+            allowNull: false,
         },
         secondary_image_url: {
-            type: DataTypes.JSON,
+            type: DataTypes.ARRAY(DataTypes.STRING),
             allowNull: true,
         },
         price: {
             type: DataTypes.DECIMAL(10, 2),
-            allowNull: true,
+            allowNull: false,
         },
         owner_id: {
             type: DataTypes.INTEGER,
@@ -36,20 +36,20 @@ export const initProductModel = (sequelize) => {
         },
         status: {
             type: DataTypes.ENUM('Pending', 'Completed', 'Cancelled'),
-            defaultValue: 'Pending',
-        },
-        collection_ids: {
-            type: DataTypes.JSON,
             allowNull: true,
         },
-        created_at: {
-            type: DataTypes.DATE,
-            defaultValue: DataTypes.NOW,
+        collection_ids: {
+            type: DataTypes.ARRAY(DataTypes.INTEGER),
+            allowNull: true,
         },
     }, {
         tableName: 'products',
-        timestamps: false,
+        timestamps: true,
+        createdAt: 'created_at',
+        updatedAt: 'updated_at',
     });
-    return Product;
+};
+export const initProductModel = (sequelize) => {
+    return Product(sequelize, DataTypes);
 };
 //# sourceMappingURL=Product.js.map

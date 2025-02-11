@@ -12,38 +12,39 @@ interface ProductAttributes {
     status?: 'Pending' | 'Completed' | 'Cancelled';
     collection_ids?: number[];
     created_at?: Date;
+    updated_at?: Date;
 }
 
 interface ProductModel extends Model<ProductAttributes>, ProductAttributes {}
 
-export const initProductModel = (sequelize: Sequelize): ModelStatic<ProductModel> => {
-    const Product = sequelize.define<ProductModel>(
+export const Product = (sequelize: Sequelize, DataTypes: any) => {
+    return sequelize.define<ProductModel>(
         'Product',
         {
             product_id: {
                 type: DataTypes.INTEGER,
-                autoIncrement: true,
                 primaryKey: true,
+                autoIncrement: true,
             },
             product_name: {
-                type: DataTypes.STRING(255),
+                type: DataTypes.STRING,
                 allowNull: false,
             },
             description: {
                 type: DataTypes.TEXT,
-                allowNull: true,
+                allowNull: false,
             },
             primary_image_url: {
-                type: DataTypes.TEXT,
-                allowNull: true,
+                type: DataTypes.STRING,
+                allowNull: false,
             },
             secondary_image_url: {
-                type: DataTypes.JSON,
+                type: DataTypes.ARRAY(DataTypes.STRING),
                 allowNull: true,
             },
             price: {
                 type: DataTypes.DECIMAL(10, 2),
-                allowNull: true,
+                allowNull: false,
             },
             owner_id: {
                 type: DataTypes.INTEGER,
@@ -55,24 +56,24 @@ export const initProductModel = (sequelize: Sequelize): ModelStatic<ProductModel
             },
             status: {
                 type: DataTypes.ENUM('Pending', 'Completed', 'Cancelled'),
-                defaultValue: 'Pending',
-            },
-            collection_ids: {
-                type: DataTypes.JSON,
                 allowNull: true,
             },
-            created_at: {
-                type: DataTypes.DATE,
-                defaultValue: DataTypes.NOW,
+            collection_ids: {
+                type: DataTypes.ARRAY(DataTypes.INTEGER),
+                allowNull: true,
             },
         },
         {
             tableName: 'products',
-            timestamps: false,
+            timestamps: true,
+            createdAt: 'created_at',
+            updatedAt: 'updated_at',
         }
     ) as ModelStatic<ProductModel>;
+};
 
-    return Product;
+export const initProductModel = (sequelize: Sequelize): ModelStatic<ProductModel> => {
+    return Product(sequelize, DataTypes);
 };
 
 export type { ProductAttributes, ProductModel };

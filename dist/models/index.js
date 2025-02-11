@@ -1,7 +1,8 @@
-import { Sequelize } from 'sequelize';
+import { Sequelize, QueryTypes } from 'sequelize';
 import { initUserModel } from './User.js';
 import { initSpaceModel } from './Space.js';
 import { initProductModel } from './Product.js';
+import { initCollectionModel } from './Collection.js';
 import config from '../config/environment.js';
 const sequelize = new Sequelize({
     dialect: 'mysql',
@@ -24,11 +25,26 @@ const sequelize = new Sequelize({
 export const User = initUserModel(sequelize);
 export const Space = initSpaceModel(sequelize);
 export const Product = initProductModel(sequelize);
+export const Collection = initCollectionModel(sequelize);
 // Set up associations
 User.hasMany(Space, { foreignKey: 'owner_id' });
 Space.belongsTo(User, { foreignKey: 'owner_id' });
 Product.belongsTo(User, { foreignKey: 'owner_id' });
 Product.belongsTo(Space, { foreignKey: 'space_id' });
+// Collection associations
+User.hasMany(Collection, { foreignKey: 'owner_id' });
+Collection.belongsTo(User, { foreignKey: 'owner_id' });
+// Many-to-Many relationship between Products and Collections
+Product.belongsToMany(Collection, {
+    through: 'product_collections',
+    foreignKey: 'product_id',
+    otherKey: 'collection_id'
+});
+Collection.belongsToMany(Product, {
+    through: 'product_collections',
+    foreignKey: 'collection_id',
+    otherKey: 'product_id'
+});
 // Sync database
 const syncDatabase = async () => {
     try {
@@ -41,5 +57,5 @@ const syncDatabase = async () => {
     }
 };
 // Export sequelize instance
-export { sequelize, syncDatabase };
+export { sequelize, syncDatabase, QueryTypes };
 //# sourceMappingURL=index.js.map

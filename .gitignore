@@ -3,13 +3,7 @@ node_modules/
 
 # Compiled output
 *.js.map
-
-# Environment files
-.env
-.env.local
-.env.development
-.env.production
-.env.test
+dist/
 
 # IDE files
 .vscode/
@@ -22,3 +16,21 @@ npm-debug.log*
 # OS generated files
 .DS_Store
 Thumbs.db
+
+# Environment files
+.env
+.env.development
+.env.production
+.env.test
+
+# Sensitive configuration
+*.pem
+*.key
+
+# Temporary files
+*.tmp
+*.bak
+
+# Build artifacts
+build/
+*.tgz
