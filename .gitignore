@@ -3,7 +3,6 @@ node_modules/
 
 # Compiled output
 *.js.map
-dist/
 
 # IDE files
 .vscode/
