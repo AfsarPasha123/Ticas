@@ -1,7 +1,60 @@
-import * as dotenv from 'dotenv';
-dotenv.config();
-import path from 'path';
+import * as path from 'path';
+import * as fs from 'fs';
 import { fileURLToPath } from 'url';
+import * as dotenv from 'dotenv';
+
+// Robust Environment Configuration
+function loadEnvironmentConfig() {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+
+  // Determine environment
+  const nodeEnv = process.env.NODE_ENV || 'production';
+  const envFile = `.env.${nodeEnv}`;
+  const envPath = path.resolve(__dirname, `../${envFile}`);
+
+  // Validate environment file exists
+  if (!fs.existsSync(envPath)) {
+    console.error(`❌ Environment file not found: ${envPath}`);
+    process.exit(1);
+  }
+
+  // Load environment variables
+  const result = dotenv.config({ 
+    path: envPath,
+    debug: nodeEnv === 'development'
+  });
+
+  // Validate critical environment variables
+  const requiredVars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME', 'PORT', 'JWT_SECRET'];
+  const missingVars = requiredVars.filter(varName => !process.env[varName]);
+
+  if (missingVars.length > 0) {
+    console.error('❌ Missing required environment variables:', missingVars);
+    process.exit(1);
+  }
+
+  return {
+    database: {
+      host: process.env.DB_HOST!,
+      user: process.env.DB_USER!,
+      password: process.env.DB_PASSWORD!,
+      name: process.env.DB_NAME!
+    },
+    server: {
+      port: Number(process.env.PORT || 3000),
+      env: nodeEnv
+    },
+    jwt: {
+      secret: process.env.JWT_SECRET!
+    }
+  };
+}
+
+// Configuration
+const config = loadEnvironmentConfig();
+
+// Imports
 import express, { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import cors from 'cors';
@@ -15,107 +68,131 @@ import * as authController from './controllers/authController.js';
 // Import database
 import { sequelize } from './models/index.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const app = express();
-const port = Number(process.env.PORT) || 3000;
+const port = config.server.port;
 
-// Middleware for parsing JSON with increased size limit
+// Middleware for parsing JSON with increased size limit and robust error handling
 app.use(express.json({
   limit: '10mb',
-  verify: (req: Request, res: Response, buf) => {
+  verify: (req: Request, res: Response, buf: Buffer) => {
     try {
       JSON.parse(buf.toString());
     } catch (e) {
       console.error('Invalid JSON:', e);
-      res.status(400).json({ error: 'Invalid JSON' });
+      res.status(400).json({ 
+        error: 'Invalid JSON', 
+        details: e instanceof Error ? e.message : 'Unknown parsing error' 
+      });
+      throw e;
     }
   }
 }));
 
-// Global request logging middleware
-app.use((req, res, next) => {
+// Global request logging middleware with enhanced diagnostics
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const startTime = Date.now();
+  
   console.log('==================== GLOBAL REQUEST DEBUG ====================');
   console.log('Timestamp:', new Date().toISOString());
+  console.log('Environment:', config.server.env);
   console.log('Method:', req.method);
   console.log('Path:', req.path);
   console.log('Headers:', JSON.stringify(req.headers, null, 2));
-  
-  // Capture raw body for debugging
-  let rawBody = '';
-  req.on('data', (chunk) => {
-    rawBody += chunk;
-  });
-  req.on('end', () => {
-    console.log('Raw Body:', rawBody);
-  });
+
+  // Capture response details
+  const oldWrite = res.write;
+  const oldEnd = res.end;
+  const chunks: Buffer[] = [];
+
+  res.write = function(chunk: any) {
+    chunks.push(Buffer.from(chunk));
+    return oldWrite.apply(res, arguments as any);
+  };
+
+  res.end = function(chunk?: any) {
+    if (chunk) chunks.push(Buffer.from(chunk));
+    
+    const responseTime = Date.now() - startTime;
+    console.log('Response Time:', `${responseTime}ms`);
+    console.log('Status Code:', res.statusCode);
+
+    const body = Buffer.concat(chunks).toString('utf8');
+    console.log('Response Body:', body);
+
+    return oldEnd.apply(res, arguments as any);
+  };
 
   next();
 });
 
-// CORS configuration
+// CORS configuration with security enhancements
 app.use(cors({
-  origin: '*', // Be more specific in production
+  origin: process.env.CORS_ORIGIN || '*', 
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  maxAge: 3600
 }));
 
-// Serve static files from uploads directory
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Serve static files with robust path resolution
+app.use('/uploads', express.static(
+  path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../uploads'), 
+  { 
+    dotfiles: 'ignore',
+    maxAge: '1d'
+  }
+));
 
-// Rate limiting middleware for general routes
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+// Rate limiting middleware with granular control
+const createLimiter = (windowMs: number, max: number) => rateLimit({
+  windowMs, 
+  max, 
   message: { error: 'Too many requests. Please try again later.' },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  skipFailedRequests: true
 });
 
-// Less strict rate limit for auth routes
-const authLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes window
-  max: 50, // Allow 50 requests per window
-  message: { error: 'Too many authentication attempts. Please try again in 5 minutes.' },
-  standardHeaders: true,
-  legacyHeaders: false
-});
+const generalLimiter = createLimiter(15 * 60 * 1000, 100);
+const authLimiter = createLimiter(5 * 60 * 1000, 50);
 
-// Apply rate limiting to all routes
-app.use(limiter);
-
-// Auth routes (with auth-specific rate limiting)
+// Apply rate limiting
+app.use(generalLimiter);
 app.use('/auth', authLimiter);
+
+// Authentication routes
 app.post('/auth/register', authController.register);
 app.post('/auth/login', authController.login);
 
-// Space routes (protected by authentication)
+// Protected routes
 app.use('/spaces', spaceRoutes);
-
-// Product routes (protected by authentication)
 app.use('/products', productRoutes);
-
-// Collection routes (protected by authentication)
 app.use('/collections', collectionRoutes);
 
-// Log all registered routes
-app._router.stack.forEach((middleware: { route?: { methods: Record<string, boolean>, path: string } }) => {
+// Centralized route logging
+app._router.stack.forEach((middleware: any) => {
   if (middleware.route) {
     console.log(`Registered Route: ${Object.keys(middleware.route.methods).join(', ')} ${middleware.route.path}`);
   }
 });
 
-// Error handling middleware
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+// Comprehensive error handling middleware
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error('Unhandled Error:', err.stack);
-  res.status(500).json({
-    status: 'error',
-    message: 'Internal server error'
-  });
+  
+  // Determine error response based on environment
+  const errorResponse = config.server.env === 'production'
+    ? { status: 'error', message: 'Internal server error' }
+    : { 
+        status: 'error', 
+        message: err.message,
+        stack: err.stack 
+      };
+
+  res.status(500).json(errorResponse);
 });
 
-// 404 handler
+// 404 handler with logging
 app.use((_req: Request, res: Response) => {
   console.log('404 - Route Not Found');
   res.status(404).json({
@@ -124,22 +201,43 @@ app.use((_req: Request, res: Response) => {
   });
 });
 
-// Initialize database connection and start server
+// Server initialization with comprehensive error handling
 async function startServer() {
   try {
+    // Database connection
     await sequelize.authenticate();
-    console.log('Database connection has been established successfully.');
+    console.log('✅ Database connection established successfully.');
 
-    app.listen(port, '0.0.0.0', () => {
-      console.log(`Server is running on port ${port}`);
-      console.log(`Listening on all network interfaces`);
+    // Synchronize models (optional, be cautious in production)
+    if (config.server.env !== 'production') {
+      await sequelize.sync({ alter: true });
+      console.log('✅ Database models synchronized.');
+    }
+
+    // Start HTTP server
+    const server = app.listen(port, () => {
+      console.log(`🚀 Server running in ${config.server.env} mode on port ${port}`);
     });
+
+    // Graceful shutdown handling
+    process.on('SIGTERM', () => {
+      console.log('🛑 SIGTERM received. Shutting down gracefully...');
+      server.close(() => {
+        console.log('🔌 HTTP server closed.');
+        sequelize.close().then(() => {
+          console.log('📦 Database connection closed.');
+          process.exit(0);
+        });
+      });
+    });
+
   } catch (error) {
-    console.error('Unable to start server:', error);
+    console.error('❌ Unable to start server:', error);
     process.exit(1);
   }
 }
 
+// Initiate server startup
 startServer();
 
 export default app;
