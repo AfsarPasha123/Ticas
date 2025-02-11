@@ -23,6 +23,13 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
+  "ts-node": {
+    "experimentalSpecifierResolution": "node",
+    "experimentalResolver": true,
+    "transpileOnly": false,
+    "esm": true,
+    "logError": true
+  },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
