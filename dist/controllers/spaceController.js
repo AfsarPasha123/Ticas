@@ -16,53 +16,32 @@ const fileFilter = (_req, file, cb) => {
         cb(new Error('Invalid file type. Only JPEG, PNG and GIF images are allowed.'));
     }
 };
+// Export the upload middleware
 export const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB limit
+        fileSize: 5 * 1024 * 1024, // 5MB limit
     }
 });
 // Function to handle creating a new space
 export const createSpace = async (req, res) => {
-    console.log('Create Space Request Received');
-    console.log('Request Body:', req.body);
-    console.log('Request File:', req.file);
-    console.log('Full Request Object:', {
-        body: req.body,
-        query: req.query,
-        params: req.params,
-        headers: req.headers
-    });
-
     let uploadedImageUrl = null;
     let spaceCreated = false;
     try {
-        // Log all form fields
-        const formFields = Object.keys(req.body);
-        console.log('Form Fields:', formFields);
-
-        const { space_name, description } = req.body;
-        
-        // Detailed field validation logging
-        console.log('space_name:', space_name);
-        console.log('description:', description);
-        console.log('space_name type:', typeof space_name);
-        console.log('description type:', typeof description);
-
-        // More lenient field checking
-        if (!space_name || space_name.trim() === '' || !description || description.trim() === '') {
-            console.error('Missing or empty space_name or description');
+        console.log('Create Space Request Received');
+        console.log('Request Body:', req.body);
+        console.log('Request File:', req.file);
+        const space_name = req.body.space_name;
+        const description = req.body.description;
+        if (!space_name || !description) {
+            console.log('Missing Fields - space_name:', space_name, 'description:', description);
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 status: RESPONSE_TYPES.ERROR,
                 message: RESPONSE_MESSAGES.GENERIC.MISSING_FIELDS,
-                details: {
-                    space_name: space_name,
-                    description: description
-                }
+                details: { space_name, description }
             });
         }
-
         // Check if user exists
         const userId = req.user.user_id;
         const user = await User.findByPk(userId);

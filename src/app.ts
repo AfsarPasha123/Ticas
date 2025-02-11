@@ -20,7 +20,7 @@ function loadEnvironmentConfig() {
   }
 
   // Load environment variables
-  const result = dotenv.config({ 
+  dotenv.config({ 
     path: envPath,
     debug: nodeEnv === 'development'
   });
@@ -74,52 +74,51 @@ const port = config.server.port;
 // Middleware for parsing JSON with increased size limit and robust error handling
 app.use(express.json({
   limit: '10mb',
-  verify: (req: Request, res: Response, buf: Buffer) => {
+  verify: (_req: Request, _res: Response, buf: Buffer) => {
     try {
       JSON.parse(buf.toString());
     } catch (e) {
       console.error('Invalid JSON:', e);
-      res.status(400).json({ 
-        error: 'Invalid JSON', 
-        details: e instanceof Error ? e.message : 'Unknown parsing error' 
-      });
-      throw e;
+      throw new Error('Invalid JSON');
     }
   }
 }));
 
 // Global request logging middleware with enhanced diagnostics
-app.use((req: Request, res: Response, next: NextFunction) => {
+app.use((_req: Request, _res: Response, next: NextFunction) => {
   const startTime = Date.now();
   
+  // Log request details
   console.log('==================== GLOBAL REQUEST DEBUG ====================');
   console.log('Timestamp:', new Date().toISOString());
-  console.log('Environment:', config.server.env);
-  console.log('Method:', req.method);
-  console.log('Path:', req.path);
-  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Method:', _req.method);
+  console.log('Path:', _req.path);
+  console.log('Headers:', _req.headers);
+  console.log('Body:', _req.body);
 
-  // Capture response details
-  const oldWrite = res.write;
-  const oldEnd = res.end;
+  // Track response time
+  const oldWrite = _res.write;
+  const oldEnd = _res.end;
+
   const chunks: Buffer[] = [];
 
-  res.write = function(chunk: any) {
+  _res.write = function(chunk: any): boolean {
     chunks.push(Buffer.from(chunk));
-    return oldWrite.apply(res, arguments as any);
+    return oldWrite.apply(_res, arguments as any);
   };
 
-  res.end = function(chunk?: any) {
-    if (chunk) chunks.push(Buffer.from(chunk));
-    
+  _res.end = function(chunk: any): any {
+    if (chunk) {
+      chunks.push(Buffer.from(chunk));
+    }
+    const responseBody = Buffer.concat(chunks).toString('utf8');
     const responseTime = Date.now() - startTime;
-    console.log('Response Time:', `${responseTime}ms`);
-    console.log('Status Code:', res.statusCode);
 
-    const body = Buffer.concat(chunks).toString('utf8');
-    console.log('Response Body:', body);
+    console.log('Response Time:', responseTime + 'ms');
+    console.log('Response Body:', responseBody);
+    console.log('================================================================');
 
-    return oldEnd.apply(res, arguments as any);
+    oldEnd.apply(_res, arguments as any);
   };
 
   next();
@@ -177,19 +176,13 @@ app._router.stack.forEach((middleware: any) => {
 });
 
 // Comprehensive error handling middleware
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('Unhandled Error:', err.stack);
-  
-  // Determine error response based on environment
-  const errorResponse = config.server.env === 'production'
-    ? { status: 'error', message: 'Internal server error' }
-    : { 
-        status: 'error', 
-        message: err.message,
-        stack: err.stack 
-      };
-
-  res.status(500).json(errorResponse);
+app.use((_err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error('Unhandled Error:', _err.stack);
+  res.status(500).json({
+    type: 'error',
+    message: 'Internal Server Error',
+    status: 500
+  });
 });
 
 // 404 handler with logging

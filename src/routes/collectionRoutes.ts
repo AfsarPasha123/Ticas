@@ -1,33 +1,30 @@
-import express from 'express';
+import express, { Router, Request, Response, NextFunction, RequestHandler } from 'express';
 import * as collectionController from '../controllers/collectionController.js';
 
-const router = express.Router();
+const router: Router = express.Router();
 
 // Comprehensive logging middleware
-router.use((req, res, next) => {
+router.use((_req: Request, _res: Response, next: NextFunction) => {
   console.log('==================== COLLECTION ROUTE DEBUG ====================');
   console.log('Timestamp:', new Date().toISOString());
-  console.log('Method:', req.method);
-  console.log('Path:', req.path);
-  console.log('Headers:', JSON.stringify(req.headers, null, 2));
-  console.log('Body:', JSON.stringify(req.body, null, 2));
+  console.log('Method:', _req.method);
+  console.log('Path:', _req.path);
+  console.log('Headers:', JSON.stringify(_req.headers, null, 2));
+  console.log('Body:', JSON.stringify(_req.body, null, 2));
   console.log('================================================================');
   next();
 });
 
 // Create a new collection
-router.post('/', collectionController.createCollection);
+router.post('/', collectionController.createCollection as RequestHandler);
 
 // Get collection details
-router.get('/:id/details', collectionController.getCollectionDetails);
+router.get('/:id', collectionController.getCollectionDetails as RequestHandler);
 
-// Get products in a collection
-router.get('/:id/products', collectionController.getCollectionProducts);
+// Get all products in a collection
+router.get('/:id/products', collectionController.getCollectionProducts as RequestHandler);
 
-// Get user collections
-router.get('/', collectionController.getUserCollections);
-
-// Generate test collection data (only for development)
-router.post('/generate-test-data', collectionController.generateTestCollectionData);
+// Get collections for a user
+router.get('/user/collections', collectionController.getUserCollections as RequestHandler);
 
 export default router;

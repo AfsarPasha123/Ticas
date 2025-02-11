@@ -3,7 +3,7 @@ interface ProductAttributes {
     product_id?: number;
     product_name: string;
     description: string;
-    primary_image_url: string;
+    primary_image_url?: string;
     secondary_image_url?: string[];
     price: number;
     owner_id: number;

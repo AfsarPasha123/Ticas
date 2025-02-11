@@ -1,7 +1,7 @@
 interface UserPayload {
     user_id: number;
     email: string;
-    username: string;
+    username?: string;
 }
 declare global {
     namespace Express {

@@ -1,60 +1,207 @@
 import { Product, Space } from '../models/index.js';
 import { uploadToS3 } from '../services/s3Service.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES, RESPONSE_TYPES } from '../constants/responseConstants.js';
 import path from 'path';
+// Create a new product
 export const createProduct = async (req, res) => {
     try {
-        const { product_name, description, price, space_id, collection_id } = req.body;
-        // Validate required fields
-        if (!product_name || !description || !price || !req.file) {
-            return res.status(400).json({
-                error: "Missing required fields"
+        const { product_name, description, price, space_id } = req.body;
+        const image = req.file;
+        if (!product_name || !price || !space_id) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
+                type: RESPONSE_TYPES.ERROR,
+                message: RESPONSE_MESSAGES.GENERIC.MISSING_FIELDS,
+                status: HTTP_STATUS.BAD_REQUEST
             });
         }
-        // Upload image to S3
-        const fileExtension = path.extname(req.file.originalname);
-        const key = `products/${Date.now()}-${Math.random().toString(36).substring(7)}${fileExtension}`;
-        let primary_image_url;
-        try {
-            primary_image_url = await uploadToS3(req.file, key);
-        }
-        catch (error) {
-            console.error('Error uploading to S3:', error);
-            return res.status(500).json({
-                error: "Failed to upload image"
+        // Check if space exists
+        const space = await Space.findByPk(space_id);
+        if (!space) {
+            return res.status(HTTP_STATUS.NOT_FOUND).json({
+                type: RESPONSE_TYPES.ERROR,
+                message: RESPONSE_MESSAGES.SPACE.NOT_FOUND,
+                status: HTTP_STATUS.NOT_FOUND
             });
         }
-        // Get owner_id from authenticated user
-        const owner_id = req.user.user_id;
-        // If space_id is provided, validate it exists
-        if (space_id) {
-            const space = await Space.findByPk(space_id);
-            if (!space) {
-                return res.status(400).json({
-                    error: "Invalid space_id provided"
-                });
-            }
+        let primary_image_url = '';
+        if (image) {
+            const fileExtension = path.extname(image.originalname);
+            const key = `products/${Date.now()}${fileExtension}`;
+            primary_image_url = await uploadToS3(image, key);
         }
-        // Create the product
         const product = await Product.create({
             product_name,
-            description,
+            description: description || '',
             price,
-            primary_image_url,
             space_id,
-            owner_id,
-            collection_ids: collection_id ? [collection_id] : []
+            primary_image_url,
+            owner_id: req.user?.user_id || 0 // This should be handled by auth middleware
         });
-        return res.status(201).json({
-            message: "Product created successfully",
-            product_id: product.product_id,
-            product_name: product.product_name,
-            primary_image_url: product.primary_image_url
+        return res.status(HTTP_STATUS.CREATED).json({
+            type: RESPONSE_TYPES.SUCCESS,
+            message: RESPONSE_MESSAGES.GENERIC.CREATED,
+            data: product.toJSON(),
+            status: HTTP_STATUS.CREATED
         });
     }
     catch (error) {
         console.error('Error creating product:', error);
-        return res.status(500).json({
-            error: "Internal server error"
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+            type: RESPONSE_TYPES.ERROR,
+            message: RESPONSE_MESSAGES.GENERIC.INTERNAL_SERVER_ERROR,
+            status: HTTP_STATUS.INTERNAL_SERVER_ERROR
+        });
+    }
+};
+// Get all products
+export const getAllProducts = async (_req, res) => {
+    try {
+        const products = await Product.findAll({
+            attributes: ['product_id', 'product_name', 'description', 'price', 'primary_image_url']
+        });
+        return res.status(HTTP_STATUS.OK).json({
+            type: RESPONSE_TYPES.SUCCESS,
+            message: RESPONSE_MESSAGES.GENERIC.FETCH_SUCCESS,
+            data: products.map(product => product.toJSON()),
+            status: HTTP_STATUS.OK
+        });
+    }
+    catch (error) {
+        console.error('Error fetching products:', error);
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+            type: RESPONSE_TYPES.ERROR,
+            message: RESPONSE_MESSAGES.GENERIC.INTERNAL_SERVER_ERROR,
+            status: HTTP_STATUS.INTERNAL_SERVER_ERROR
+        });
+    }
+};
+// Get product by ID
+export const getProductById = async (req, res) => {
+    try {
+        const product_id = parseInt(req.params.id);
+        if (isNaN(product_id)) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
+                type: RESPONSE_TYPES.ERROR,
+                message: RESPONSE_MESSAGES.GENERIC.INVALID_REQUEST,
+                status: HTTP_STATUS.BAD_REQUEST
+            });
+        }
+        const product = await Product.findByPk(product_id);
+        if (!product) {
+            return res.status(HTTP_STATUS.NOT_FOUND).json({
+                type: RESPONSE_TYPES.ERROR,
+                message: RESPONSE_MESSAGES.GENERIC.NOT_FOUND,
+                status: HTTP_STATUS.NOT_FOUND
+            });
+        }
+        return res.status(HTTP_STATUS.OK).json({
+            type: RESPONSE_TYPES.SUCCESS,
+            message: RESPONSE_MESSAGES.GENERIC.FETCH_SUCCESS,
+            data: product.toJSON(),
+            status: HTTP_STATUS.OK
+        });
+    }
+    catch (error) {
+        console.error('Error fetching product:', error);
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+            type: RESPONSE_TYPES.ERROR,
+            message: RESPONSE_MESSAGES.GENERIC.INTERNAL_SERVER_ERROR,
+            status: HTTP_STATUS.INTERNAL_SERVER_ERROR
+        });
+    }
+};
+// Update product
+export const updateProduct = async (req, res) => {
+    try {
+        const product_id = parseInt(req.params.id);
+        const { product_name, description, price, space_id } = req.body;
+        const image = req.file;
+        if (isNaN(product_id)) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
+                type: RESPONSE_TYPES.ERROR,
+                message: RESPONSE_MESSAGES.GENERIC.INVALID_REQUEST,
+                status: HTTP_STATUS.BAD_REQUEST
+            });
+        }
+        const product = await Product.findByPk(product_id);
+        if (!product) {
+            return res.status(HTTP_STATUS.NOT_FOUND).json({
+                type: RESPONSE_TYPES.ERROR,
+                message: RESPONSE_MESSAGES.GENERIC.NOT_FOUND,
+                status: HTTP_STATUS.NOT_FOUND
+            });
+        }
+        let primary_image_url = product.primary_image_url || '';
+        if (image) {
+            const fileExtension = path.extname(image.originalname);
+            const key = `products/${Date.now()}${fileExtension}`;
+            primary_image_url = await uploadToS3(image, key);
+        }
+        if (space_id) {
+            const space = await Space.findByPk(space_id);
+            if (!space) {
+                return res.status(HTTP_STATUS.NOT_FOUND).json({
+                    type: RESPONSE_TYPES.ERROR,
+                    message: RESPONSE_MESSAGES.SPACE.NOT_FOUND,
+                    status: HTTP_STATUS.NOT_FOUND
+                });
+            }
+        }
+        await product.update({
+            product_name: product_name || product.product_name,
+            description: description || product.description,
+            price: price || product.price,
+            space_id: space_id || product.space_id,
+            primary_image_url
+        });
+        return res.status(HTTP_STATUS.OK).json({
+            type: RESPONSE_TYPES.SUCCESS,
+            message: RESPONSE_MESSAGES.GENERIC.UPDATED,
+            data: product.toJSON(),
+            status: HTTP_STATUS.OK
+        });
+    }
+    catch (error) {
+        console.error('Error updating product:', error);
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+            type: RESPONSE_TYPES.ERROR,
+            message: RESPONSE_MESSAGES.GENERIC.INTERNAL_SERVER_ERROR,
+            status: HTTP_STATUS.INTERNAL_SERVER_ERROR
+        });
+    }
+};
+// Delete product
+export const deleteProduct = async (req, res) => {
+    try {
+        const product_id = parseInt(req.params.id);
+        if (isNaN(product_id)) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
+                type: RESPONSE_TYPES.ERROR,
+                message: RESPONSE_MESSAGES.GENERIC.INVALID_REQUEST,
+                status: HTTP_STATUS.BAD_REQUEST
+            });
+        }
+        const product = await Product.findByPk(product_id);
+        if (!product) {
+            return res.status(HTTP_STATUS.NOT_FOUND).json({
+                type: RESPONSE_TYPES.ERROR,
+                message: RESPONSE_MESSAGES.GENERIC.NOT_FOUND,
+                status: HTTP_STATUS.NOT_FOUND
+            });
+        }
+        await product.destroy();
+        return res.status(HTTP_STATUS.OK).json({
+            type: RESPONSE_TYPES.SUCCESS,
+            message: RESPONSE_MESSAGES.GENERIC.DELETED,
+            status: HTTP_STATUS.OK
+        });
+    }
+    catch (error) {
+        console.error('Error deleting product:', error);
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+            type: RESPONSE_TYPES.ERROR,
+            message: RESPONSE_MESSAGES.GENERIC.INTERNAL_SERVER_ERROR,
+            status: HTTP_STATUS.INTERNAL_SERVER_ERROR
         });
     }
 };

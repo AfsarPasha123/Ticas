@@ -4,7 +4,7 @@ interface ProductAttributes {
     product_id?: number;
     product_name: string;
     description: string;
-    primary_image_url: string;
+    primary_image_url?: string;
     secondary_image_url?: string[];
     price: number;
     owner_id: number;
@@ -36,7 +36,7 @@ export const Product = (sequelize: Sequelize, DataTypes: any) => {
             },
             primary_image_url: {
                 type: DataTypes.STRING,
-                allowNull: false,
+                allowNull: true,
             },
             secondary_image_url: {
                 type: DataTypes.ARRAY(DataTypes.STRING),

@@ -16,7 +16,7 @@ export const Product = (sequelize, DataTypes) => {
         },
         primary_image_url: {
             type: DataTypes.STRING,
-            allowNull: false,
+            allowNull: true,
         },
         secondary_image_url: {
             type: DataTypes.ARRAY(DataTypes.STRING),
