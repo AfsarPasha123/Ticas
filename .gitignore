@@ -28,5 +28,3 @@ Thumbs.db
 build/
 *.tgz
 
-
-dist/
