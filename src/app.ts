@@ -230,7 +230,7 @@ async function startServer() {
 
     // Synchronize models (optional, be cautious in production)
     if (config.server.env !== "production") {
-      await sequelize.sync({ alter: true });
+      await sequelize.sync();
       console.log("✅ Database models synchronized.");
     }
 
