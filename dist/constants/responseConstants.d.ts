@@ -16,8 +16,9 @@ export declare const RESPONSE_MESSAGES: {
         readonly MISSING_CREDENTIALS: "Email and password are required.";
         readonly USER_EXISTS: "User already exists.";
         readonly MISSING_JWT_SECRET: "JWT secret is not configured.";
-        readonly INVALID_TOKEN: "Invalid token.";
-        readonly TOKEN_REQUIRED: "Authentication token is required.";
+        readonly INVALID_TOKEN: "Invalid or expired token";
+        readonly TOKEN_REFRESH_SUCCESS: "Token refreshed successfully";
+        readonly TOKEN_REQUIRED: "Authentication token is required";
         readonly MISSING_FIELDS: "Required fields are missing.";
     };
     readonly SPACE: {

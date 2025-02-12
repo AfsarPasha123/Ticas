@@ -20,8 +20,9 @@ export const RESPONSE_MESSAGES = {
         MISSING_CREDENTIALS: 'Email and password are required.',
         USER_EXISTS: 'User already exists.',
         MISSING_JWT_SECRET: 'JWT secret is not configured.',
-        INVALID_TOKEN: 'Invalid token.',
-        TOKEN_REQUIRED: 'Authentication token is required.',
+        INVALID_TOKEN: 'Invalid or expired token',
+        TOKEN_REFRESH_SUCCESS: 'Token refreshed successfully',
+        TOKEN_REQUIRED: 'Authentication token is required',
         MISSING_FIELDS: 'Required fields are missing.'
     },
 

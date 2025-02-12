@@ -53,6 +53,7 @@ import cors from 'cors';
 import spaceRoutes from './routes/spaceRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import collectionRoutes from './routes/collectionRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 import * as authController from './controllers/authController.js';
 // Import database
 import { sequelize } from './models/index.js';
@@ -136,6 +137,7 @@ app.post('/auth/login', authController.login);
 app.use('/spaces', spaceRoutes);
 app.use('/products', productRoutes);
 app.use('/collections', collectionRoutes);
+app.use('/auth', authRoutes);
 // Centralized route logging
 app._router.stack.forEach((middleware) => {
     if (middleware.route) {
