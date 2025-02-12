@@ -15,20 +15,28 @@ export const createProduct = async (req: Request, res: Response) => {
       });
     }
 
-    // Upload image to S3
-    const fileExtension = path.extname(req.file.originalname);
-    const key = `products/${Date.now()}-${Math.random()
-      .toString(36)
-      .substring(7)}${fileExtension}`;
+    console.log(req.file, "file");
+    let primary_image_url: string | null = null;
 
-    let primary_image_url;
-    try {
-      primary_image_url = await uploadToS3(req.file, key);
-    } catch (error) {
-      console.error("Error uploading to S3:", error);
-      return res.status(500).json({
-        error: "Failed to upload image",
-      });
+    if (req.file) {
+      // Upload image to S3
+      //   const fileExtension = path.extname(req.file.originalname);
+      //   const key = `products/${Date.now()}-${Math.random()
+      //     .toString(36)
+      //     .substring(7)}${fileExtension}`;
+
+      const key = `products/${Date.now()}-${path.basename(
+        req.file.originalname
+      )}`;
+
+      try {
+        primary_image_url = await uploadToS3(req.file, key);
+      } catch (error) {
+        console.error("Error uploading to S3:", error);
+        return res.status(500).json({
+          error: "Failed to upload image",
+        });
+      }
     }
 
     // Get owner_id from authenticated user
@@ -49,7 +57,7 @@ export const createProduct = async (req: Request, res: Response) => {
       product_name,
       description,
       price,
-      primary_image_url,
+      primary_image_url: primary_image_url || "",
       space_id,
       owner_id,
       collection_ids: collection_id ? [collection_id] : [],
