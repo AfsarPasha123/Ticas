@@ -2,9 +2,37 @@ import { Collection } from '../models/Collection.js';
 import { Product } from '../models/index.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES, RESPONSE_TYPES } from '../constants/responseConstants.js';
 import { sequelize } from '../database/connection.js';
+import multer from 'multer';
+import path from 'path';
+import { uploadToS3, deleteFromS3 } from '../services/s3Service.js';
+// Configure multer for memory storage
+const storage = multer.memoryStorage();
+// File filter for images
+const fileFilter = (_req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+    }
+    else {
+        cb(new Error('Invalid file type. Only JPEG, PNG and GIF images are allowed.'));
+    }
+};
+// Export the upload middleware
+export const upload = multer({
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB limit
+    }
+});
 // Create a new collection
 export const createCollection = async (req, res) => {
+    let uploadedImageUrl = null;
+    let collectionCreated = false;
     try {
+        console.log('Create Collection Request Received');
+        console.log('Request Body:', req.body);
+        console.log('Request File:', req.file);
         const { collection_name, description } = req.body;
         const owner_id = req.user?.user_id;
         if (!owner_id) {
@@ -14,21 +42,37 @@ export const createCollection = async (req, res) => {
                 status: HTTP_STATUS.UNAUTHORIZED
             });
         }
-        if (!collection_name) {
+        if (!collection_name || !description) {
+            console.log('Missing Fields - collection_name:', collection_name, 'description:', description);
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 type: RESPONSE_TYPES.ERROR,
                 message: RESPONSE_MESSAGES.GENERIC.MISSING_FIELDS,
                 status: HTTP_STATUS.BAD_REQUEST
             });
         }
+        // Upload image to S3 if provided
+        if (req.file) {
+            try {
+                const key = `collections/${owner_id}/${Date.now()}-${path.basename(req.file.originalname)}`;
+                uploadedImageUrl = await uploadToS3(req.file, key);
+            }
+            catch (uploadError) {
+                console.error('Failed to upload image:', uploadError);
+                return res.status(HTTP_STATUS.BAD_REQUEST).json({
+                    type: RESPONSE_TYPES.ERROR,
+                    message: 'Failed to upload image',
+                    error: uploadError instanceof Error ? uploadError.message : 'Unknown error'
+                });
+            }
+        }
         const collectionData = {
             collection_name,
-            owner_id
+            description,
+            owner_id,
+            collection_image: uploadedImageUrl
         };
-        if (description) {
-            collectionData.description = description;
-        }
         const collection = await Collection.create(collectionData);
+        collectionCreated = true;
         return res.status(HTTP_STATUS.CREATED).json({
             type: RESPONSE_TYPES.SUCCESS,
             message: RESPONSE_MESSAGES.COLLECTION.CREATED,
@@ -37,6 +81,16 @@ export const createCollection = async (req, res) => {
         });
     }
     catch (error) {
+        // If collection was not created but image was uploaded, delete the image
+        if (!collectionCreated && uploadedImageUrl) {
+            try {
+                const key = uploadedImageUrl.split('/').slice(-1)[0];
+                await deleteFromS3(key);
+            }
+            catch (deleteError) {
+                console.error('Failed to delete uploaded image after collection creation failed:', deleteError);
+            }
+        }
         console.error('Error creating collection:', error);
         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
             type: RESPONSE_TYPES.ERROR,

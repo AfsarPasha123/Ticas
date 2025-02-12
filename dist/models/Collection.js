@@ -4,6 +4,7 @@ class Collection extends Model {
     collection_id;
     collection_name;
     description;
+    collection_image;
     owner_id;
     last_updated;
     // Timestamps
@@ -27,6 +28,10 @@ export const initCollectionModel = (sequelize) => {
         },
         description: {
             type: DataTypes.TEXT,
+            allowNull: true
+        },
+        collection_image: {
+            type: DataTypes.STRING(1024),
             allowNull: true
         },
         owner_id: {

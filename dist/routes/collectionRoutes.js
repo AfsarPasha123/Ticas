@@ -1,5 +1,6 @@
 import express from 'express';
 import * as collectionController from '../controllers/collectionController.js';
+import { upload } from '../controllers/collectionController.js';
 const router = express.Router();
 // Comprehensive logging middleware
 router.use((_req, _res, next) => {
@@ -12,8 +13,8 @@ router.use((_req, _res, next) => {
     console.log('================================================================');
     next();
 });
-// Create a new collection
-router.post('/', collectionController.createCollection);
+// Create a new collection with image upload
+router.post('/', upload.single('collection_image'), collectionController.createCollection);
 // Get collection details
 router.get('/:id', collectionController.getCollectionDetails);
 // Get all products in a collection

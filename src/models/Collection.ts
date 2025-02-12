@@ -5,18 +5,20 @@ interface CollectionAttributes {
   collection_id: number;
   collection_name: string;
   description?: string;
+  collection_image?: string | null;
   owner_id: number;
   last_updated?: Date;
 }
 
 // Interface for Collection creation
-interface CollectionCreationAttributes extends Optional<CollectionAttributes, 'collection_id' | 'description' | 'last_updated'> {}
+interface CollectionCreationAttributes extends Optional<CollectionAttributes, 'collection_id' | 'description' | 'collection_image' | 'last_updated'> {}
 
 // Define the Collection model
 class Collection extends Model<CollectionAttributes, CollectionCreationAttributes> implements CollectionAttributes {
   public collection_id!: number;
   public collection_name!: string;
   public description?: string;
+  public collection_image?: string | null;
   public owner_id!: number;
   public last_updated?: Date;
 
@@ -42,6 +44,10 @@ export const initCollectionModel = (sequelize: Sequelize) => {
     },
     description: {
       type: DataTypes.TEXT,
+      allowNull: true
+    },
+    collection_image: {
+      type: DataTypes.STRING(1024),
       allowNull: true
     },
     owner_id: {

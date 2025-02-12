@@ -1,5 +1,6 @@
 import express, { Router, Request, Response, NextFunction, RequestHandler } from 'express';
 import * as collectionController from '../controllers/collectionController.js';
+import { upload } from '../controllers/collectionController.js';
 
 const router: Router = express.Router();
 
@@ -15,8 +16,8 @@ router.use((_req: Request, _res: Response, next: NextFunction) => {
   next();
 });
 
-// Create a new collection
-router.post('/', collectionController.createCollection as RequestHandler);
+// Create a new collection with image upload
+router.post('/', upload.single('collection_image'), collectionController.createCollection as RequestHandler);
 
 // Get collection details
 router.get('/:id', collectionController.getCollectionDetails as RequestHandler);
