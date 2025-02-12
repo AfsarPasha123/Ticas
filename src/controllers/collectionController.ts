@@ -3,7 +3,7 @@ import { AuthenticatedRequest } from "../middleware/authMiddleware.js";
 import { Collection } from "../models/Collection.js";
 import { Product } from "../models/index.js";
 import { sequelize, QueryTypes } from "../models/index.js";
-import "../types";
+import "../types.js";
 
 // Create a new collection
 export const createCollection = async (
