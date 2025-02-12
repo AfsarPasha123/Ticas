@@ -1,4 +1,4 @@
-import express from "express";
+import express, { RequestHandler } from "express";
 import multer from "multer";
 import * as productController from "../controllers/productController.js";
 import { authenticateToken } from "../middleware/authMiddleware.js";
@@ -27,7 +27,7 @@ export const upload = multer({
   },
 });
 
-router.use(authenticateToken);
+router.use(authenticateToken as RequestHandler);
 // Create a new product
 router.post("/", upload.single("image"), productController.createProduct);
 

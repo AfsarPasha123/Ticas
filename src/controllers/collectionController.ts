@@ -1,49 +1,150 @@
 import { Response } from "express";
 import { AuthenticatedRequest } from "../middleware/authMiddleware.js";
-import { Collection } from "../models/Collection.js";
+import {
+  Collection,
+  CollectionCreationAttributes,
+} from "../models/Collection.js";
 import { Product } from "../models/index.js";
-import { sequelize, QueryTypes } from "../models/index.js";
-import "../types.js";
+import {
+  HTTP_STATUS,
+  RESPONSE_MESSAGES,
+  RESPONSE_TYPES,
+} from "../constants/responseConstants.js";
+import { sequelize } from "../database/connection.js";
+import multer from "multer";
+import path from "path";
+import { uploadToS3, deleteFromS3 } from "../services/s3Service.js";
+
+// Configure multer for memory storage
+const storage = multer.memoryStorage();
+
+// File filter for images
+const fileFilter = (
+  _req: any,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback
+) => {
+  const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(
+      new Error("Invalid file type. Only JPEG, PNG and GIF images are allowed.")
+    );
+  }
+};
+
+// Export the upload middleware
+export const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+});
+
+interface CollectionRequest extends AuthenticatedRequest {
+  body: {
+    collection_name: string;
+    description: string;
+  };
+  file?: Express.Multer.File;
+}
 
 // Create a new collection
 export const createCollection = async (
-  req: AuthenticatedRequest,
+  req: CollectionRequest,
   res: Response
-) => {
-  console.log("Create Collection Request Received");
-  console.log("Request Body:", req.body);
-  console.log("Authenticated User:", req.user);
+): Promise<Response> => {
+  let uploadedImageUrl: string | null = null;
+  let collectionCreated = false;
 
   try {
-    const { collection_name, description } = req.body;
+    console.log("Create Collection Request Received");
+    console.log("Request Body:", req.body);
+    console.log("Request File:", req.file);
 
-    // Get the user ID from the authenticated request
+    const { collection_name, description } = req.body;
     const owner_id = req.user?.user_id;
 
     if (!owner_id) {
-      console.error("No owner_id found in authenticated request");
-      return res.status(401).json({ error: "Unauthorized. Please log in." });
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+        type: RESPONSE_TYPES.ERROR,
+        message: RESPONSE_MESSAGES.AUTH.TOKEN_REQUIRED,
+        status: HTTP_STATUS.UNAUTHORIZED,
+      });
     }
 
-    // Create the collection
-    const newCollection = await Collection.create({
+    if (!collection_name || !description) {
+      console.log(
+        "Missing Fields - collection_name:",
+        collection_name,
+        "description:",
+        description
+      );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        type: RESPONSE_TYPES.ERROR,
+        message: RESPONSE_MESSAGES.GENERIC.MISSING_FIELDS,
+        status: HTTP_STATUS.BAD_REQUEST,
+      });
+    }
+
+    // Upload image to S3 if provided
+    if (req.file) {
+      try {
+        const key = `collections/${owner_id}/${Date.now()}-${path.basename(
+          req.file.originalname
+        )}`;
+        uploadedImageUrl = await uploadToS3(req.file, key);
+      } catch (uploadError) {
+        console.error("Failed to upload image:", uploadError);
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          type: RESPONSE_TYPES.ERROR,
+          message: "Failed to upload image",
+          error:
+            uploadError instanceof Error
+              ? uploadError.message
+              : "Unknown error",
+        });
+      }
+    }
+
+    const collectionData: CollectionCreationAttributes = {
       collection_name,
       description,
       owner_id,
-    });
+      collection_image: uploadedImageUrl,
+    };
 
-    console.log("Collection created successfully:", newCollection.toJSON());
+    const collection = await Collection.create(collectionData);
+    collectionCreated = true;
 
-    res.status(201).json({
-      message: "Collection created successfully.",
-      collection_id: newCollection.collection_id,
-      collection_name: newCollection.collection_name,
+    return res.status(HTTP_STATUS.CREATED).json({
+      type: RESPONSE_TYPES.SUCCESS,
+      message: RESPONSE_MESSAGES.COLLECTION.CREATED,
+      data: collection.toJSON(),
+      status: HTTP_STATUS.CREATED,
     });
   } catch (error) {
+    // If collection was not created but image was uploaded, delete the image
+    if (!collectionCreated && uploadedImageUrl) {
+      try {
+        const key = uploadedImageUrl.split("/").slice(-1)[0];
+        await deleteFromS3(key);
+      } catch (deleteError) {
+        console.error(
+          "Failed to delete uploaded image after collection creation failed:",
+          deleteError
+        );
+      }
+    }
+
     console.error("Error creating collection:", error);
-    res
-      .status(400)
-      .json({ error: "Invalid data provided.", details: String(error) });
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      type: RESPONSE_TYPES.ERROR,
+      message: RESPONSE_MESSAGES.GENERIC.INTERNAL_SERVER_ERROR,
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+    });
   }
 };
 
@@ -51,57 +152,52 @@ export const createCollection = async (
 export const getCollectionDetails = async (
   req: AuthenticatedRequest,
   res: Response
-) => {
+): Promise<Response> => {
   try {
-    const { id } = req.params;
+    const collection_id = parseInt(req.params.id);
+    const owner_id = req.user?.user_id;
 
-    // Find the collection
-    const collection = await Collection.findByPk(id);
+    if (!owner_id) {
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+        type: RESPONSE_TYPES.ERROR,
+        message: RESPONSE_MESSAGES.AUTH.TOKEN_REQUIRED,
+        status: HTTP_STATUS.UNAUTHORIZED,
+      });
+    }
+
+    if (isNaN(collection_id)) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        type: RESPONSE_TYPES.ERROR,
+        message: RESPONSE_MESSAGES.COLLECTION.INVALID_DATA,
+        status: HTTP_STATUS.BAD_REQUEST,
+      });
+    }
+
+    const collection = await Collection.findOne({
+      where: { collection_id, owner_id },
+    });
 
     if (!collection) {
-      return res.status(404).json({ error: "Collection not found." });
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        type: RESPONSE_TYPES.ERROR,
+        message: RESPONSE_MESSAGES.COLLECTION.NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND,
+      });
     }
 
-    // Get collection details using a raw SQL query for performance
-    const [results] = await sequelize.query(
-      `
-      SELECT 
-        COUNT(DISTINCT p.product_id) as total_items,
-        COALESCE(SUM(p.price), 0) as total_worth,
-        COUNT(DISTINCT t.tag_name) as total_tags
-      FROM collections c
-      LEFT JOIN product_collections pc ON c.collection_id = pc.collection_id
-      LEFT JOIN products p ON pc.product_id = p.product_id
-      LEFT JOIN product_tags t ON p.product_id = t.product_id
-      WHERE c.collection_id = :collectionId
-    `,
-      {
-        replacements: { collectionId: id },
-        type: QueryTypes.SELECT,
-      }
-    );
-
-    interface CollectionDetails {
-      total_items: number;
-      total_worth: number;
-      total_tags: number;
-    }
-
-    const details = results as CollectionDetails[];
-
-    res.status(200).json({
-      collection_id: collection.collection_id,
-      collection_name: collection.collection_name,
-      last_updated: collection.last_updated,
-      total_items: details[0].total_items,
-      total_worth: parseFloat(details[0].total_worth.toFixed(2)),
-      total_tags: details[0].total_tags,
+    return res.status(HTTP_STATUS.OK).json({
+      type: RESPONSE_TYPES.SUCCESS,
+      message: RESPONSE_MESSAGES.COLLECTION.FETCH_SUCCESS,
+      data: collection.toJSON(),
+      status: HTTP_STATUS.OK,
     });
   } catch (error) {
-    console.error("Error fetching collection details:", error);
-    res
-      .status(500)
-      .json({ error: "An unexpected error occurred. Please try again later." });
+    console.error("Error getting collection details:", error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      type: RESPONSE_TYPES.ERROR,
+      message: RESPONSE_MESSAGES.GENERIC.INTERNAL_SERVER_ERROR,
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+    });
   }
 };
 
@@ -109,44 +205,58 @@ export const getCollectionDetails = async (
 export const getCollectionProducts = async (
   req: AuthenticatedRequest,
   res: Response
-) => {
+): Promise<Response> => {
   try {
-    const { id } = req.params;
+    const collection_id = parseInt(req.params.id);
+    const owner_id = req.user?.user_id;
 
-    // Find the collection
-    const collection = await Collection.findByPk(id);
-
-    if (!collection) {
-      return res.status(404).json({ error: "Collection not found." });
+    if (!owner_id) {
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+        type: RESPONSE_TYPES.ERROR,
+        message: RESPONSE_MESSAGES.AUTH.TOKEN_REQUIRED,
+        status: HTTP_STATUS.UNAUTHORIZED,
+      });
     }
 
-    // Find products in the collection
-    const products = await Product.findAll({
-      include: [
-        {
-          model: Collection,
-          where: { collection_id: id },
-          through: { attributes: [] }, // Exclude join table attributes
-        },
-      ],
-      attributes: ["product_id", "product_name", "price"],
+    if (isNaN(collection_id)) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        type: RESPONSE_TYPES.ERROR,
+        message: RESPONSE_MESSAGES.COLLECTION.INVALID_DATA,
+        status: HTTP_STATUS.BAD_REQUEST,
+      });
+    }
+
+    const collection = await Collection.findOne({
+      where: { collection_id, owner_id },
     });
 
-    res.status(200).json({
-      collection_id: collection.collection_id,
-      collection_name: collection.collection_name,
-      total_products: products.length,
-      products: products.map((product) => ({
-        product_id: product.product_id,
-        product_name: product.product_name,
-        price: product.price,
-      })),
+    if (!collection) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        type: RESPONSE_TYPES.ERROR,
+        message: RESPONSE_MESSAGES.COLLECTION.NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND,
+      });
+    }
+
+    const products = await Product.findAll({
+      where: sequelize.literal(
+        `JSON_CONTAINS(collection_ids, '${collection_id}')`
+      ),
+    });
+
+    return res.status(HTTP_STATUS.OK).json({
+      type: RESPONSE_TYPES.SUCCESS,
+      message: RESPONSE_MESSAGES.COLLECTION.FETCH_SUCCESS,
+      data: products.map((product) => product.toJSON()),
+      status: HTTP_STATUS.OK,
     });
   } catch (error) {
-    console.error("Error fetching collection products:", error);
-    res
-      .status(500)
-      .json({ error: "An unexpected error occurred. Please try again later." });
+    console.error("Error getting collection products:", error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      type: RESPONSE_TYPES.ERROR,
+      message: RESPONSE_MESSAGES.GENERIC.INTERNAL_SERVER_ERROR,
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+    });
   }
 };
 
@@ -154,36 +264,34 @@ export const getCollectionProducts = async (
 export const getUserCollections = async (
   req: AuthenticatedRequest,
   res: Response
-) => {
+): Promise<Response> => {
   try {
-    const { owner_id } = req.query;
+    const owner_id = req.user?.user_id;
 
     if (!owner_id) {
-      return res.status(400).json({ error: "Invalid or missing user_id." });
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+        type: RESPONSE_TYPES.ERROR,
+        message: RESPONSE_MESSAGES.AUTH.TOKEN_REQUIRED,
+        status: HTTP_STATUS.UNAUTHORIZED,
+      });
     }
 
-    // Find collections for the user
     const collections = await Collection.findAll({
-      where: { owner_id: Number(owner_id) },
-      attributes: ["collection_id", "collection_name", "description"],
+      where: { owner_id },
     });
 
-    res.status(200).json({
-      total_collections: collections.length,
-      collections: collections,
+    return res.status(HTTP_STATUS.OK).json({
+      type: RESPONSE_TYPES.SUCCESS,
+      message: RESPONSE_MESSAGES.COLLECTION.FETCH_SUCCESS,
+      data: collections.map((collection) => collection.toJSON()),
+      status: HTTP_STATUS.OK,
     });
   } catch (error) {
-    console.error("Error fetching user collections:", error);
-    res
-      .status(500)
-      .json({ error: "An unexpected error occurred. Please try again later." });
+    console.error("Error getting user collections:", error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      type: RESPONSE_TYPES.ERROR,
+      message: RESPONSE_MESSAGES.GENERIC.INTERNAL_SERVER_ERROR,
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+    });
   }
-};
-
-// Generate test collection data (only for development)
-export const generateTestCollectionData = async (
-  _req: AuthenticatedRequest,
-  _res: Response
-) => {
-  // ... existing code remains the same ...
 };

@@ -20,8 +20,9 @@ export const RESPONSE_MESSAGES = {
         MISSING_CREDENTIALS: 'Email and password are required.',
         USER_EXISTS: 'User already exists.',
         MISSING_JWT_SECRET: 'JWT secret is not configured.',
-        INVALID_TOKEN: 'Invalid token.',
-        TOKEN_REQUIRED: 'Authentication token is required.',
+        INVALID_TOKEN: 'Invalid or expired token',
+        TOKEN_REFRESH_SUCCESS: 'Token refreshed successfully',
+        TOKEN_REQUIRED: 'Authentication token is required',
         MISSING_FIELDS: 'Required fields are missing.'
     },
 
@@ -38,12 +39,29 @@ export const RESPONSE_MESSAGES = {
         CREATED_SUCCESSFULLY: 'Space created successfully.'
     },
 
+    // Collection Messages
+    COLLECTION: {
+        CREATED: 'Collection created successfully.',
+        UPDATED: 'Collection updated successfully.',
+        DELETED: 'Collection deleted successfully.',
+        NOT_FOUND: 'Collection not found.',
+        INVALID_DATA: 'Invalid collection data provided.',
+        ACCESS_DENIED: 'Access denied to this collection.',
+        FETCH_SUCCESS: 'Collections retrieved successfully.'
+    },
+
     // Generic Messages
     GENERIC: {
         INTERNAL_SERVER_ERROR: 'An internal server error occurred.',
         INVALID_REQUEST: 'Invalid request.',
         MISSING_FIELDS: 'Required fields are missing.',
-        DATABASE_ERROR: 'Database operation failed.'
+        DATABASE_ERROR: 'Database operation failed.',
+        CREATED: 'Resource created successfully.',
+        UPDATED: 'Resource updated successfully.',
+        DELETED: 'Resource deleted successfully.',
+        NOT_FOUND: 'Resource not found.',
+        FORBIDDEN: 'Access denied.',
+        FETCH_SUCCESS: 'Resources retrieved successfully.'
     }
 } as const;
 
@@ -55,7 +73,9 @@ export const RESPONSE_TYPES = {
     INFO: 'info'
 } as const;
 
-// Standard Response Structure
+/**
+ * Standard Response Structure
+ */
 export interface ApiResponse<T = any> {
     status: typeof RESPONSE_TYPES[keyof typeof RESPONSE_TYPES];
     message: string;

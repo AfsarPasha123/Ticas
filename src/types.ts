@@ -1,11 +1,8 @@
-// import type { Request } from 'express';
-
 // Define the structure of the user object
 interface UserPayload {
   user_id: number;
   email: string;
-  username: string; // Added username property
-  // Add other user properties as needed
+  username?: string;
 }
 
 // Augment the Request interface to include the user property

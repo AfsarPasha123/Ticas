@@ -30,6 +30,7 @@ const fileFilter = (
   }
 };
 
+// Export the upload middleware
 export const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
@@ -55,12 +56,24 @@ export const createSpace = async (
   let spaceCreated = false;
 
   try {
-    const { space_name, description } = req.body;
-    console.log(req.body, "body");
+    console.log("Create Space Request Received");
+    console.log("Request Body:", req.body);
+    console.log("Request File:", req.file);
+
+    const space_name = req.body.space_name;
+    const description = req.body.description;
+
     if (!space_name || !description) {
+      console.log(
+        "Missing Fields - space_name:",
+        space_name,
+        "description:",
+        description
+      );
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         status: RESPONSE_TYPES.ERROR,
         message: RESPONSE_MESSAGES.GENERIC.MISSING_FIELDS,
+        details: { space_name, description },
       });
     }
 

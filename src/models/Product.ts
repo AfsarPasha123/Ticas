@@ -4,12 +4,10 @@ interface ProductAttributes {
     product_id?: number;
     product_name: string;
     description: string;
-    primary_image_url: string;
-    secondary_image_url?: string[];
+    primary_image_url?: string;
     price: number;
     owner_id: number;
     space_id?: number;
-    status?: 'Pending' | 'Completed' | 'Cancelled';
     collection_ids?: number[];
     created_at?: Date;
     updated_at?: Date;
@@ -33,14 +31,12 @@ export const Product = (sequelize: Sequelize, DataTypes: any) => {
             description: {
                 type: DataTypes.TEXT,
                 allowNull: false,
+                defaultValue: '',
             },
             primary_image_url: {
                 type: DataTypes.STRING,
-                allowNull: false,
-            },
-            secondary_image_url: {
-                type: DataTypes.ARRAY(DataTypes.STRING),
                 allowNull: true,
+                defaultValue: '',
             },
             price: {
                 type: DataTypes.DECIMAL(10, 2),
@@ -54,13 +50,27 @@ export const Product = (sequelize: Sequelize, DataTypes: any) => {
                 type: DataTypes.INTEGER,
                 allowNull: true,
             },
-            status: {
-                type: DataTypes.ENUM('Pending', 'Completed', 'Cancelled'),
-                allowNull: true,
-            },
             collection_ids: {
-                type: DataTypes.ARRAY(DataTypes.INTEGER),
+                type: DataTypes.JSON,
                 allowNull: true,
+                defaultValue: [],
+                get() {
+                    const value = this.getDataValue('collection_ids');
+                    return value ? (typeof value === 'string' ? JSON.parse(value) : value) : [];
+                },
+                set(value: number[]) {
+                    this.setDataValue('collection_ids', Array.isArray(value) ? value : []);
+                }
+            },
+            created_at: {
+                type: DataTypes.DATE,
+                allowNull: false,
+                defaultValue: DataTypes.NOW,
+            },
+            updated_at: {
+                type: DataTypes.DATE,
+                allowNull: false,
+                defaultValue: DataTypes.NOW,
             },
         },
         {

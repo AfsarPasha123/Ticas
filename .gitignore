@@ -20,6 +20,14 @@ Thumbs.db
 *.pem
 *.key
 
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.development
+.env.test
+.env.production
+
 # Temporary files
 *.tmp
 *.bak
@@ -28,3 +36,4 @@ Thumbs.db
 build/
 *.tgz
 
+dist/

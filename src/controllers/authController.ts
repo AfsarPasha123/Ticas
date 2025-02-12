@@ -65,11 +65,20 @@ export const login = async (req: AuthRequest, res: Response): Promise<Response> 
       { expiresIn: '24h' }
     );
 
+    const refreshToken = jwt.sign(
+      { user_id: user.user_id, email: user.email },
+      process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key',
+      { expiresIn: '30d' }
+    );
+
     console.log('Login successful for user:', email);
     return res.status(HTTP_STATUS.OK).json({
       status: RESPONSE_TYPES.SUCCESS,
       message: RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS,
-      data: { token }
+      data: { 
+        token, 
+        refreshToken 
+      }
     });
   } catch (error: unknown) {
     console.error('Error in login:', error);
