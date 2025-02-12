@@ -1,6 +1,7 @@
 import express from "express";
 import * as collectionController from "../controllers/collectionController.js";
 import { upload } from "../controllers/collectionController.js";
+import { authenticateToken } from '../middleware/authMiddleware.js';
 const router = express.Router();
 // Comprehensive logging middleware
 router.use((_req, _res, next) => {
@@ -13,6 +14,7 @@ router.use((_req, _res, next) => {
     console.log("================================================================");
     next();
 });
+router.use(authenticateToken);
 // Create a new collection with image upload
 router.post("/", upload.single("collection_image"), collectionController.createCollection);
 // Get collection details
