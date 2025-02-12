@@ -27,3 +27,6 @@ Thumbs.db
 # Build artifacts
 build/
 *.tgz
+
+
+dist/
