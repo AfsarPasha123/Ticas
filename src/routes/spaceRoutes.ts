@@ -1,6 +1,6 @@
 import express, { Router } from 'express';
 import type { RequestHandler } from 'express';
-import { createSpace,  getUserSpaces, upload } from '../controllers/spaceController.js';
+import { createSpace, getSpaceById, getUserSpaces, upload } from '../controllers/spaceController.js';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import { S3Client, ListBucketsCommand } from '@aws-sdk/client-s3';
 
@@ -41,6 +41,6 @@ router.post('/',
 
 // Get routes
 router.get('/user', getUserSpaces as RequestHandler);
-// router.get('/:id', getSpaceById as RequestHandler);
+router.get('/:id', getSpaceById as RequestHandler);
 
 export default router;
