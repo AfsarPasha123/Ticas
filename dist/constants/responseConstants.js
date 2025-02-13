@@ -22,7 +22,12 @@ export const RESPONSE_MESSAGES = {
         INVALID_TOKEN: 'Invalid or expired token',
         TOKEN_REFRESH_SUCCESS: 'Token refreshed successfully',
         TOKEN_REQUIRED: 'Authentication token is required',
-        MISSING_FIELDS: 'Required fields are missing.'
+        MISSING_FIELDS: 'Required fields are missing.',
+        MISMATCHED_PASSWORDS: 'New password and confirmation password do not match.',
+        PASSWORD_UPDATED: 'Password updated successfully.',
+        USERNAME_EXISTS: 'Username already exists.',
+        PHONE_NUMBER_EXISTS: 'Phone number already exists.',
+        PROFILE_UPDATED: 'Profile updated successfully.'
     },
     // Space Messages
     SPACE: {

@@ -71,6 +71,7 @@ import spaceRoutes from "./routes/spaceRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import collectionRoutes from "./routes/collectionRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js";
 import * as authController from "./controllers/authController.js";
 
 // Import database
@@ -186,6 +187,7 @@ app.use("/spaces", spaceRoutes);
 app.use("/products", productRoutes);
 app.use("/collections", collectionRoutes);
 app.use("/auth", authRoutes);
+app.use("/profile", profileRoutes)
 
 // Centralized route logging
 app._router.stack.forEach((middleware: any) => {
