@@ -30,7 +30,7 @@ router.get('/test-s3', async (_req, res) => {
 // Route for creating a space with image upload
 router.post('/', upload.single('space_image'), createSpace);
 // Get routes
-router.get('/:id', getSpaceById);
 router.get('/user', getUserSpaces);
+router.get('/:id', getSpaceById);
 export default router;
 //# sourceMappingURL=spaceRoutes.js.map

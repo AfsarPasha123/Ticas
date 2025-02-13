@@ -40,7 +40,7 @@ router.post('/',
 );
 
 // Get routes
-router.get('/:id', getSpaceById as RequestHandler);
 router.get('/user', getUserSpaces as RequestHandler);
+router.get('/:id', getSpaceById as RequestHandler);
 
 export default router;
