@@ -185,10 +185,7 @@ export const getSpaceById = async (
   }
 };
 
-export const getUserSpaces = async (
-  req: SpaceRequest,
-  res: Response
-): Promise<Response> => {
+export const getUserSpaces = async (req: any, res: Response): Promise<Response> => {
   try {
     const spaces = await Space.findAll({
       where: { owner_id: req.user!.user_id }, // Use the authenticated user's ID
