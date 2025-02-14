@@ -53,7 +53,6 @@ export const createSpace = async (req, res) => {
                 message: "User not found. Please login again.",
             });
         }
-        // let space_image = "";
         // Upload image to S3 if provided
         if (space_image) {
             try {
@@ -70,24 +69,6 @@ export const createSpace = async (req, res) => {
                 });
             }
         }
-        // if (req.file) {
-        //   try {
-        // const key = `spaces/${userId}/${Date.now()}-${path.basename(
-        //   req.file.originalname
-        // )}`;
-        //     uploadedImageUrl = await uploadToS3(req.file, key);
-        //   } catch (uploadError) {
-        //     console.error("Failed to upload image:", uploadError);
-        //     return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        //       status: RESPONSE_TYPES.ERROR,
-        //       message: "Failed to upload image",
-        //       error:
-        //         uploadError instanceof Error
-        //           ? uploadError.message
-        //           : "Unknown error",
-        //     });
-        //   }
-        // }
         const spaceData = {
             space_name,
             description,
