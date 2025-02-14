@@ -57,14 +57,14 @@ export const createSpace = async (req, res) => {
         // Upload image to S3 if provided
         if (space_image) {
             const fileExtension = path.extname(space_image.originalname);
-            const key = `products/${Date.now()}${fileExtension}`;
+            const key = `spaces/${userId}/${Date.now()}${fileExtension}`;
             uploadedImageUrl = await uploadToS3(space_image, key);
         }
         // if (req.file) {
         //   try {
-        //     const key = `spaces/${userId}/${Date.now()}-${path.basename(
-        //       req.file.originalname
-        //     )}`;
+        // const key = `spaces/${userId}/${Date.now()}-${path.basename(
+        //   req.file.originalname
+        // )}`;
         //     uploadedImageUrl = await uploadToS3(req.file, key);
         //   } catch (uploadError) {
         //     console.error("Failed to upload image:", uploadError);
