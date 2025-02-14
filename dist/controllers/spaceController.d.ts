@@ -12,4 +12,5 @@ interface SpaceRequest extends AuthenticatedRequest {
 export declare const createSpace: (req: SpaceRequest, res: Response) => Promise<Response>;
 export declare const getSpaceById: (req: SpaceRequest, res: Response) => Promise<Response>;
 export declare const getUserSpaces: (req: any, res: Response) => Promise<Response>;
+export declare const getSpaceProducts: (req: any, res: Response) => Promise<Response>;
 export {};

@@ -19,7 +19,7 @@ router.use(authenticateToken);
 router.post("/", upload.single("collection_image"), collectionController.createCollection);
 // Get collection details
 router.get("/:id", collectionController.getCollectionDetails);
-// Get all products in a collection
+// Get all products exist in a collection
 router.get("/:id/products", collectionController.getCollectionProducts);
 // Get collections for a user
 router.get("/user/collections", collectionController.getUserCollections);
