@@ -28,11 +28,7 @@ router.use((_req: Request, _res: Response, next: NextFunction) => {
 });
 router.use(authenticateToken as RequestHandler);
 // Create a new collection with image upload
-router.post(
-  "/",
-  upload.single("collection_image"),
-  collectionController.createCollection as RequestHandler
-);
+router.post("/", upload.single("collection_image"), collectionController.createCollection as RequestHandler);
 
 // Get collection details
 router.get("/:id", collectionController.getCollectionDetails as RequestHandler);
