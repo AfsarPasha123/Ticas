@@ -94,10 +94,19 @@ export const createSpace = async (
     // Upload image to S3 if provided
 
     if (space_image) {
-          const fileExtension = path.extname(space_image.originalname);
-          const key = `spaces/${userId}/${Date.now()}${fileExtension}`;
-          uploadedImageUrl = await uploadToS3(space_image, key);
-        }
+      try {
+      const fileExtension = path.extname(space_image.originalname);
+      const key = `spaces/${userId}/${Date.now()}${fileExtension}`;
+      uploadedImageUrl = await uploadToS3(space_image, key);
+      } catch (uploadError) {
+      console.error("Failed to upload image:", uploadError);
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        status: RESPONSE_TYPES.ERROR,
+        message: "Failed to upload image",
+        error: uploadError instanceof Error ? uploadError.message : "Unknown error",
+      });
+      }
+    }
 
 
     // if (req.file) {
