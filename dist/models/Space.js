@@ -35,7 +35,8 @@ export const initSpaceModel = (sequelize) => {
         space_image: {
             type: DataTypes.STRING(255),
             allowNull: true,
-            field: 'space_image'
+            // field: 'space_image'
+            defaultValue: "",
         },
         owner_id: {
             type: DataTypes.INTEGER,
