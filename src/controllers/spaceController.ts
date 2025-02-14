@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { Space } from "../models/Space.js";
 import { User } from "../models/User.js";
+import { Product } from "../models/index.js";
 import {
   HTTP_STATUS,
   RESPONSE_MESSAGES,
@@ -198,6 +199,45 @@ export const getUserSpaces = async (req: any, res: Response): Promise<Response> 
     });
   } catch (error) {
     console.error("Error fetching user spaces:", error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      status: RESPONSE_TYPES.ERROR,
+      message: RESPONSE_MESSAGES.GENERIC.INTERNAL_SERVER_ERROR,
+    });
+  }
+};
+
+// Get all products in a space
+export const getSpaceProducts = async (req: any, res: Response): Promise<Response> => {
+  try {
+    const space_id  = parseInt(req.params.id);
+    const userId = req.user!.user_id;
+    if (!space_id) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        status: RESPONSE_TYPES.ERROR,
+        message: RESPONSE_MESSAGES.SPACE.INVALID_ID,
+      });
+    }
+
+    const space = await Space.findOne({
+      where: { space_id: space_id, owner_id: userId },
+    });
+    if (!space) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        status: RESPONSE_TYPES.ERROR,
+        message: RESPONSE_MESSAGES.SPACE.NOT_FOUND,
+      });
+    }
+
+    const products = await Product.findAll({
+      where: { space_id: space_id, owner_id: userId},
+    });
+    return res.status(HTTP_STATUS.OK).json({
+      status: RESPONSE_TYPES.SUCCESS,
+      message: RESPONSE_MESSAGES.GENERIC.FETCH_SUCCESS,
+      data: products,
+    });
+  } catch (error) {
+    console.error("Error fetching space products:", error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       status: RESPONSE_TYPES.ERROR,
       message: RESPONSE_MESSAGES.GENERIC.INTERNAL_SERVER_ERROR,

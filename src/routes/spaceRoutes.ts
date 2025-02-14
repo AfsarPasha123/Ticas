@@ -1,6 +1,6 @@
 import express, { Router } from 'express';
 import type { RequestHandler } from 'express';
-import { createSpace, getSpaceById, getUserSpaces, upload } from '../controllers/spaceController.js';
+import { createSpace, getSpaceById, getSpaceProducts, getUserSpaces, upload } from '../controllers/spaceController.js';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import { S3Client, ListBucketsCommand } from '@aws-sdk/client-s3';
 
@@ -41,6 +41,10 @@ router.post('/',
 
 // Get routes
 router.get('/user', getUserSpaces as RequestHandler);
+// Get all products in a space
+router.get('/:id/products', getSpaceProducts as RequestHandler);
+// Get a single space by ID
 router.get('/:id', getSpaceById as RequestHandler);
+
 
 export default router;

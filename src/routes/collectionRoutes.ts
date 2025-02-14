@@ -33,7 +33,7 @@ router.post("/", upload.single("collection_image"), collectionController.createC
 // Get collection details
 router.get("/:id", collectionController.getCollectionDetails as RequestHandler);
 
-// Get all products in a collection
+// Get all products exist in a collection
 router.get(
   "/:id/products",
   collectionController.getCollectionProducts as RequestHandler
