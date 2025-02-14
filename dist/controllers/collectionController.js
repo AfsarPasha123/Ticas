@@ -5,6 +5,7 @@ import { sequelize } from "../database/connection.js";
 import multer from "multer";
 import path from "path";
 import { uploadToS3, deleteFromS3 } from "../services/s3Service.js";
+import { Op } from 'sequelize';
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
 // File filter for images
@@ -217,6 +218,58 @@ export const getUserCollections = async (req, res) => {
     }
     catch (error) {
         console.error("Error getting user collections:", error);
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+            type: RESPONSE_TYPES.ERROR,
+            message: RESPONSE_MESSAGES.GENERIC.INTERNAL_SERVER_ERROR,
+            status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        });
+    }
+};
+// Get all collections that a product exist in
+export const getProductCollections = async (req, res) => {
+    try {
+        const owner_id = req.user?.user_id;
+        if (!owner_id) {
+            return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+                type: RESPONSE_TYPES.ERROR,
+                message: RESPONSE_MESSAGES.AUTH.TOKEN_REQUIRED,
+                status: HTTP_STATUS.UNAUTHORIZED,
+            });
+        }
+        const product = await Product.findByPk(req.params.id);
+        if (!product) {
+            return res.status(HTTP_STATUS.NOT_FOUND).json({
+                type: RESPONSE_TYPES.ERROR,
+                message: RESPONSE_MESSAGES.COLLECTION.NOT_FOUND,
+                status: HTTP_STATUS.NOT_FOUND,
+            });
+        }
+        const collectionIds = product.collection_ids;
+        if (!collectionIds || collectionIds.length === 0) {
+            return res.status(HTTP_STATUS.OK).json({
+                type: RESPONSE_TYPES.SUCCESS,
+                message: RESPONSE_MESSAGES.COLLECTION.FETCH_SUCCESS,
+                data: [],
+                status: HTTP_STATUS.OK,
+            });
+        }
+        const collections = await Collection.findAll({
+            where: {
+                owner_id,
+                collection_id: {
+                    [Op.in]: collectionIds,
+                },
+            },
+        });
+        return res.status(HTTP_STATUS.OK).json({
+            type: RESPONSE_TYPES.SUCCESS,
+            message: RESPONSE_MESSAGES.COLLECTION.FETCH_SUCCESS,
+            data: collections.map((collection) => collection.toJSON()),
+            status: HTTP_STATUS.OK,
+        });
+    }
+    catch (error) {
+        console.error("Error getting product collections:", error);
         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
             type: RESPONSE_TYPES.ERROR,
             message: RESPONSE_MESSAGES.GENERIC.INTERNAL_SERVER_ERROR,

@@ -62,7 +62,9 @@ export const RESPONSE_MESSAGES = {
         DELETED: 'Resource deleted successfully.',
         NOT_FOUND: 'Resource not found.',
         FORBIDDEN: 'Access denied.',
-        FETCH_SUCCESS: 'Resources retrieved successfully.'
+        FETCH_SUCCESS: 'Resources retrieved successfully.',
+        SEARCH_SUCCESS: 'Search results fetched successfully.',
+        QUERY_REQUIRED: 'Search query is required.',
     }
 };
 // Response Types

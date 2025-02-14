@@ -62,6 +62,7 @@ import productRoutes from "./routes/productRoutes.js";
 import collectionRoutes from "./routes/collectionRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
+import searchRoutes from "./routes/searchRoutes.js";
 import * as authController from "./controllers/authController.js";
 // Import database
 import { sequelize } from "./models/index.js";
@@ -147,6 +148,7 @@ app.use("/products", productRoutes);
 app.use("/collections", collectionRoutes);
 app.use("/auth", authRoutes);
 app.use("/profile", profileRoutes);
+app.use("/search", searchRoutes);
 // Centralized route logging
 app._router.stack.forEach((middleware) => {
     if (middleware.route) {

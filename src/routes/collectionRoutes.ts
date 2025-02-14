@@ -49,6 +49,12 @@ router.get(
   collectionController.getUserCollections as RequestHandler
 );
 
+// Get all collections that a product exist in.
+router.get(
+  "/product/:id",
+  collectionController.getProductCollections as RequestHandler
+);
+
 export default router;
 
 
