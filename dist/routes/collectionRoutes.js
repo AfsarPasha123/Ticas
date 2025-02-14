@@ -23,5 +23,7 @@ router.get("/:id", collectionController.getCollectionDetails);
 router.get("/:id/products", collectionController.getCollectionProducts);
 // Get collections for a user
 router.get("/user/collections", collectionController.getUserCollections);
+// Get all collections that a product exist in.
+router.get("/product/:id", collectionController.getProductCollections);
 export default router;
 //# sourceMappingURL=collectionRoutes.js.map

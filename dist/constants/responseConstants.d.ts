@@ -57,6 +57,8 @@ export declare const RESPONSE_MESSAGES: {
         readonly NOT_FOUND: "Resource not found.";
         readonly FORBIDDEN: "Access denied.";
         readonly FETCH_SUCCESS: "Resources retrieved successfully.";
+        readonly SEARCH_SUCCESS: "Search results fetched successfully.";
+        readonly QUERY_REQUIRED: "Search query is required.";
     };
 };
 export declare const RESPONSE_TYPES: {

@@ -13,4 +13,5 @@ export declare const createCollection: (req: CollectionRequest, res: Response) =
 export declare const getCollectionDetails: (req: AuthenticatedRequest, res: Response) => Promise<Response>;
 export declare const getCollectionProducts: (req: AuthenticatedRequest, res: Response) => Promise<Response>;
 export declare const getUserCollections: (req: AuthenticatedRequest, res: Response) => Promise<Response>;
+export declare const getProductCollections: (req: any, res: Response) => Promise<Response<any, Record<string, any>>>;
 export {};
