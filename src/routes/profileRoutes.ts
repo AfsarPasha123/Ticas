@@ -3,6 +3,8 @@ import * as ProfileController from "../controllers/profileController.js";
 import { authenticateToken } from '../middleware/authMiddleware.js';
 const router = express.Router();
 
+router.get("/", authenticateToken as RequestHandler, ProfileController.getProfile as RequestHandler);
+
 router.put("/update-password", authenticateToken as RequestHandler, ProfileController.updatePassword as RequestHandler);
 
 router.put("/update-profile", authenticateToken as RequestHandler,  ProfileController.updateProfile as RequestHandler);

@@ -14,4 +14,5 @@ interface UpdateProfileRequest extends Request {
 }
 export declare const updatePassword: (req: UpdatePasswordRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
 export declare const updateProfile: (req: UpdateProfileRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const getProfile: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 export {};
