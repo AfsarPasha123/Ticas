@@ -120,4 +120,33 @@ export const updateProfile = async (req, res) => {
         });
     }
 };
+// GET USER PROFILE
+export const getProfile = async (req, res) => {
+    try {
+        const user_id = req.user?.user_id;
+        const user = await User.findByPk(user_id);
+        if (!user) {
+            return res.status(HTTP_STATUS.NOT_FOUND).json({
+                status: RESPONSE_TYPES.ERROR,
+                message: RESPONSE_MESSAGES.GENERIC.NOT_FOUND,
+            });
+        }
+        return res.status(HTTP_STATUS.OK).json({
+            status: RESPONSE_TYPES.SUCCESS,
+            message: RESPONSE_MESSAGES.GENERIC.FETCH_SUCCESS,
+            data: {
+                username: user.username,
+                phone_number: user.phone_number,
+                email: user.email,
+            },
+        });
+    }
+    catch (error) {
+        console.error('Error getting user profile:', error);
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+            status: RESPONSE_TYPES.ERROR,
+            message: RESPONSE_MESSAGES.GENERIC.INTERNAL_SERVER_ERROR,
+        });
+    }
+};
 //# sourceMappingURL=profileController.js.map
