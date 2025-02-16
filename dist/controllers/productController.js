@@ -1,12 +1,13 @@
-import { Product, Space } from "../models/index.js";
-import { uploadToS3 } from "../services/s3Service.js";
+import { Collection, Product, Space } from "../models/index.js";
 import { HTTP_STATUS, RESPONSE_MESSAGES, RESPONSE_TYPES, } from "../constants/responseConstants.js";
 import path from "path";
+import { uploadToS3 } from "../services/s3Service.js";
 // Create a new product
 export const createProduct = async (req, res) => {
     try {
         const { product_name, description, price, space_id } = req.body;
         const image = req.file;
+        let { collection_id } = req.body;
         if (!product_name || !price || !space_id) {
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 type: RESPONSE_TYPES.ERROR,
@@ -23,6 +24,26 @@ export const createProduct = async (req, res) => {
                 status: HTTP_STATUS.NOT_FOUND,
             });
         }
+        // Convert collection_id to an array of numbers if it exists
+        if (collection_id) {
+            if (!Array.isArray(collection_id)) {
+                collection_id = [collection_id];
+            }
+            collection_id = collection_id.map((id) => parseInt(id, 10));
+        }
+        // Check if collection exists
+        if (Array.isArray(collection_id)) {
+            for (const id of collection_id) {
+                const collection = await Collection.findByPk(parseInt(id));
+                if (!collection) {
+                    return res.status(HTTP_STATUS.NOT_FOUND).json({
+                        type: RESPONSE_TYPES.ERROR,
+                        message: RESPONSE_MESSAGES.COLLECTION.NOT_FOUND,
+                        status: HTTP_STATUS.NOT_FOUND,
+                    });
+                }
+            }
+        }
         let primary_image_url = "";
         if (image) {
             const fileExtension = path.extname(image.originalname);
@@ -35,6 +56,7 @@ export const createProduct = async (req, res) => {
             price,
             space_id,
             primary_image_url,
+            collection_ids: collection_id ? collection_id : [],
             owner_id: req.user?.user_id || 0, // This should be handled by auth middleware
         });
         return res.status(HTTP_STATUS.CREATED).json({
@@ -122,6 +144,7 @@ export const updateProduct = async (req, res) => {
         const product_id = parseInt(req.params.id);
         const { product_name, description, price, space_id } = req.body;
         const image = req.file;
+        let { collection_id } = req.body;
         if (isNaN(product_id)) {
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 type: RESPONSE_TYPES.ERROR,
@@ -143,6 +166,26 @@ export const updateProduct = async (req, res) => {
             const key = `products/${Date.now()}${fileExtension}`;
             primary_image_url = await uploadToS3(image, key);
         }
+        // Convert collection_id to an array of numbers if it exists
+        if (collection_id) {
+            if (!Array.isArray(collection_id)) {
+                collection_id = [collection_id];
+            }
+            collection_id = collection_id.map((id) => parseInt(id, 10));
+        }
+        // Check if collection exists
+        if (Array.isArray(collection_id)) {
+            for (const id of collection_id) {
+                const collection = await Collection.findByPk(parseInt(id));
+                if (!collection) {
+                    return res.status(HTTP_STATUS.NOT_FOUND).json({
+                        type: RESPONSE_TYPES.ERROR,
+                        message: RESPONSE_MESSAGES.COLLECTION.NOT_FOUND,
+                        status: HTTP_STATUS.NOT_FOUND,
+                    });
+                }
+            }
+        }
         if (space_id) {
             const space = await Space.findByPk(space_id);
             if (!space) {
@@ -157,7 +200,8 @@ export const updateProduct = async (req, res) => {
             product_name: product_name || product.product_name,
             description: description || product.description,
             price: price || product.price,
-            space_id: space_id || product.space_id,
+            space_id: parseInt(space_id) || product.space_id,
+            collection_ids: collection_id || product.collection_ids,
             primary_image_url,
         });
         return res.status(HTTP_STATUS.OK).json({
