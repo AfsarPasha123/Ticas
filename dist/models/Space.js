@@ -1,4 +1,4 @@
-import { Model, DataTypes } from 'sequelize';
+import { DataTypes, Model } from 'sequelize';
 export class Space extends Model {
     space_id;
     space_name;
@@ -35,7 +35,7 @@ export const initSpaceModel = (sequelize) => {
         space_image: {
             type: DataTypes.STRING(255),
             allowNull: true,
-            // field: 'space_image'
+            field: 'space_image',
             defaultValue: "",
         },
         owner_id: {

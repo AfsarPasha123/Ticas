@@ -1,4 +1,4 @@
-import { Sequelize, QueryTypes } from 'sequelize';
+import { QueryTypes, Sequelize } from 'sequelize';
 declare const sequelize: Sequelize;
 export declare const User: typeof import("./User.js").User;
 export declare const Space: typeof import("./Space.js").Space;

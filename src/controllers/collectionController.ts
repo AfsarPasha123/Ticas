@@ -1,20 +1,22 @@
-import { Response } from "express";
-import { AuthenticatedRequest } from "../middleware/authMiddleware.js";
 import {
   Collection,
   CollectionCreationAttributes,
 } from "../models/Collection.js";
-import { Product } from "../models/index.js";
 import {
   HTTP_STATUS,
   RESPONSE_MESSAGES,
   RESPONSE_TYPES,
 } from "../constants/responseConstants.js";
-import { sequelize } from "../database/connection.js";
+import { deleteFromS3, getSignedDownloadUrl, uploadToS3 } from "../services/s3Service.js";
+
+import { AuthenticatedRequest } from "../middleware/authMiddleware.js";
+import { Op } from 'sequelize';
+import { Product } from "../models/index.js";
+import { Response } from "express";
 import multer from "multer";
 import path from "path";
-import { uploadToS3, deleteFromS3 } from "../services/s3Service.js";
-import { Op } from 'sequelize';
+import { sequelize } from "../database/connection.js";
+
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
 
@@ -66,6 +68,7 @@ export const createCollection = async (
 
     const { collection_name, description } = req.body;
     const owner_id = req.user?.user_id;
+    const  collection_image = req.file;
 
     if (!owner_id) {
       return res.status(HTTP_STATUS.UNAUTHORIZED).json({
@@ -90,12 +93,13 @@ export const createCollection = async (
     }
 
     // Upload image to S3 if provided
-    if (req.file) {
+    let key: string | null = "";
+    if (collection_image) {
       try {
-        const key = `collections/${owner_id}/${Date.now()}-${path.basename(
-          req.file.originalname
+          key = `collections/${owner_id}/${Date.now()}-${path.basename(
+          collection_image.originalname
         )}`;
-        uploadedImageUrl = await uploadToS3(req.file, key);
+        uploadedImageUrl = await uploadToS3(collection_image, key);
       } catch (uploadError) {
         console.error("Failed to upload image:", uploadError);
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
@@ -113,16 +117,23 @@ export const createCollection = async (
       collection_name,
       description,
       owner_id,
-      collection_image: uploadedImageUrl,
+      collection_image: key,
     };
 
     const collection = await Collection.create(collectionData);
     collectionCreated = true;
 
+    const createdCollection = await Collection.findByPk(collection.collection_id);
+    if (!createdCollection) {
+      throw new Error("Collection was created but could not be retrieved");
+    }
     return res.status(HTTP_STATUS.CREATED).json({
       type: RESPONSE_TYPES.SUCCESS,
       message: RESPONSE_MESSAGES.COLLECTION.CREATED,
-      data: collection.toJSON(),
+      data: {
+        ...createdCollection.toJSON(),
+        collection_image: uploadedImageUrl,
+      },
       status: HTTP_STATUS.CREATED,
     });
   } catch (error) {
@@ -188,7 +199,10 @@ export const getCollectionDetails = async (
     return res.status(HTTP_STATUS.OK).json({
       type: RESPONSE_TYPES.SUCCESS,
       message: RESPONSE_MESSAGES.COLLECTION.FETCH_SUCCESS,
-      data: collection.toJSON(),
+      data: {
+        ...collection.toJSON(),
+        collection_image: await getSignedDownloadUrl(collection.getDataValue("collection_name")!),
+      },
       status: HTTP_STATUS.OK,
     });
   } catch (error) {
@@ -247,7 +261,12 @@ export const getCollectionProducts = async (
     return res.status(HTTP_STATUS.OK).json({
       type: RESPONSE_TYPES.SUCCESS,
       message: RESPONSE_MESSAGES.COLLECTION.FETCH_SUCCESS,
-      data: products.map((product) => product.toJSON()),
+      data: await Promise.all(products.map(async(product)=>{
+        return {
+          ...product.toJSON(),
+          primary_image_url: await getSignedDownloadUrl(product.primary_image_url!),
+        };
+      })),
       status: HTTP_STATUS.OK,
     });
   } catch (error) {
@@ -283,7 +302,12 @@ export const getUserCollections = async (
     return res.status(HTTP_STATUS.OK).json({
       type: RESPONSE_TYPES.SUCCESS,
       message: RESPONSE_MESSAGES.COLLECTION.FETCH_SUCCESS,
-      data: collections.map((collection) => collection.toJSON()),
+      data: await Promise.all(collections.map(async(collection)=>{
+        return {
+          ...collection.toJSON(),
+          collection_image: await getSignedDownloadUrl(collection.getDataValue('collection_image')!),
+        };
+      })),
       status: HTTP_STATUS.OK,
     });
   } catch (error) {
@@ -342,7 +366,12 @@ export const getProductCollections = async (req: any, res: Response) => {
     return res.status(HTTP_STATUS.OK).json({
       type: RESPONSE_TYPES.SUCCESS,
       message: RESPONSE_MESSAGES.COLLECTION.FETCH_SUCCESS,
-      data: collections.map((collection) => collection.toJSON()),
+      data: await Promise.all(collections.map(async(collection)=>{
+        return {
+          ...collection.toJSON(),
+          collection_image: await getSignedDownloadUrl(collection.getDataValue('collection_image')!),
+        };
+      })),
       status: HTTP_STATUS.OK,
     });
 
