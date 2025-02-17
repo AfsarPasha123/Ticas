@@ -128,7 +128,6 @@ export const getSpaceById = async (req, res) => {
         const getProducts = await Product.findAll({
             where: { space_id: id, owner_id: userId },
         });
-        console.log("getProducts Data:", getProducts);
         return res.status(HTTP_STATUS.OK).json({
             status: RESPONSE_TYPES.SUCCESS,
             message: RESPONSE_MESSAGES.SPACE.FETCH_SUCCESS,
@@ -137,6 +136,7 @@ export const getSpaceById = async (req, res) => {
                 products: {
                     total_products: getProducts.length,
                     total_products_worth: getProducts.reduce((acc, product) => parseFloat(acc) + parseFloat(product.price), 0),
+                    total_categories: 0, // TODO : Add total categories later
                 },
             },
         });

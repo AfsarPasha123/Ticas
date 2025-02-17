@@ -187,6 +187,7 @@ export const getSpaceById = async (
               products: {
                 total_products: getProducts.length,
                 total_products_worth: getProducts.reduce((acc:any, product: any) => parseFloat(acc) + parseFloat(product.price), 0),
+                total_categories: 0,  // TODO : Add total categories later
               },
             },
     });
