@@ -1,7 +1,7 @@
 import { Collection, Product, Space } from "../models/index.js";
 import { HTTP_STATUS, RESPONSE_MESSAGES, RESPONSE_TYPES, } from "../constants/responseConstants.js";
+import { getSignedDownloadUrl, uploadToS3 } from "../services/s3Service.js";
 import path from "path";
-import { uploadToS3 } from "../services/s3Service.js";
 // Create a new product
 export const createProduct = async (req, res) => {
     try {
@@ -45,9 +45,10 @@ export const createProduct = async (req, res) => {
             }
         }
         let primary_image_url = "";
+        let key = "";
         if (image) {
             const fileExtension = path.extname(image.originalname);
-            const key = `products/${Date.now()}${fileExtension}`;
+            key = `products/${Date.now()}${fileExtension}`;
             primary_image_url = await uploadToS3(image, key);
         }
         const product = await Product.create({
@@ -55,14 +56,17 @@ export const createProduct = async (req, res) => {
             description: description || "",
             price,
             space_id,
-            primary_image_url,
+            primary_image_url: key,
             collection_ids: collection_id ? collection_id : [],
             owner_id: req.user?.user_id || 0, // This should be handled by auth middleware
         });
         return res.status(HTTP_STATUS.CREATED).json({
             type: RESPONSE_TYPES.SUCCESS,
             message: RESPONSE_MESSAGES.GENERIC.CREATED,
-            data: product.toJSON(),
+            data: {
+                ...product.toJSON(),
+                primary_image_url: primary_image_url,
+            },
             status: HTTP_STATUS.CREATED,
         });
     }
@@ -90,7 +94,12 @@ export const getAllProducts = async (_req, res) => {
         return res.status(HTTP_STATUS.OK).json({
             type: RESPONSE_TYPES.SUCCESS,
             message: RESPONSE_MESSAGES.GENERIC.FETCH_SUCCESS,
-            data: products.map((product) => product.toJSON()),
+            data: await Promise.all(products.map(async (product) => {
+                return {
+                    ...product.toJSON(),
+                    primary_image_url: await getSignedDownloadUrl(product?.primary_image_url),
+                };
+            })),
             status: HTTP_STATUS.OK,
         });
     }
@@ -107,6 +116,7 @@ export const getAllProducts = async (_req, res) => {
 export const getProductById = async (req, res) => {
     try {
         const product_id = parseInt(req.params.id);
+        const owner_id = req?.user?.user_id;
         if (isNaN(product_id)) {
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 type: RESPONSE_TYPES.ERROR,
@@ -114,7 +124,9 @@ export const getProductById = async (req, res) => {
                 status: HTTP_STATUS.BAD_REQUEST,
             });
         }
-        const product = await Product.findByPk(product_id);
+        const product = await Product.findOne({
+            where: { product_id, owner_id },
+        });
         if (!product) {
             return res.status(HTTP_STATUS.NOT_FOUND).json({
                 type: RESPONSE_TYPES.ERROR,
@@ -125,7 +137,10 @@ export const getProductById = async (req, res) => {
         return res.status(HTTP_STATUS.OK).json({
             type: RESPONSE_TYPES.SUCCESS,
             message: RESPONSE_MESSAGES.GENERIC.FETCH_SUCCESS,
-            data: product.toJSON(),
+            data: {
+                ...product.toJSON(),
+                primary_image_url: await getSignedDownloadUrl(product?.primary_image_url),
+            },
             status: HTTP_STATUS.OK,
         });
     }
@@ -161,9 +176,10 @@ export const updateProduct = async (req, res) => {
             });
         }
         let primary_image_url = product.primary_image_url || "";
+        let key = "";
         if (image) {
             const fileExtension = path.extname(image.originalname);
-            const key = `products/${Date.now()}${fileExtension}`;
+            key = `products/${Date.now()}${fileExtension}`;
             primary_image_url = await uploadToS3(image, key);
         }
         // Convert collection_id to an array of numbers if it exists
@@ -202,12 +218,15 @@ export const updateProduct = async (req, res) => {
             price: price || product.price,
             space_id: parseInt(space_id) || product.space_id,
             collection_ids: collection_id || product.collection_ids,
-            primary_image_url,
+            primary_image_url: key,
         });
         return res.status(HTTP_STATUS.OK).json({
             type: RESPONSE_TYPES.SUCCESS,
             message: RESPONSE_MESSAGES.GENERIC.UPDATED,
-            data: product.toJSON(),
+            data: {
+                ...product.toJSON(),
+                primary_image_url: primary_image_url,
+            },
             status: HTTP_STATUS.OK,
         });
     }

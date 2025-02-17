@@ -1,9 +1,10 @@
-import { Sequelize, QueryTypes } from 'sequelize';
-import { initUserModel } from './User.js';
-import { initSpaceModel } from './Space.js';
-import { initProductModel } from './Product.js';
-import { initCollectionModel } from './Collection.js';
+import { QueryTypes, Sequelize } from 'sequelize';
+
 import config from '../config/environment.js';
+import { initCollectionModel } from './Collection.js';
+import { initProductModel } from './Product.js';
+import { initSpaceModel } from './Space.js';
+import { initUserModel } from './User.js';
 
 const sequelize = new Sequelize({
   dialect: 'mysql',
@@ -34,7 +35,6 @@ User.hasMany(Space, { foreignKey: 'owner_id' });
 Space.belongsTo(User, { foreignKey: 'owner_id' });
 Product.belongsTo(User, { foreignKey: 'owner_id' });
 Product.belongsTo(Space, { foreignKey: 'space_id' });
-
 // Collection associations
 User.hasMany(Collection, { foreignKey: 'owner_id' });
 Collection.belongsTo(User, { foreignKey: 'owner_id' });
