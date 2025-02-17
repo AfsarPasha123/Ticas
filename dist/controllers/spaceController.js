@@ -1,10 +1,10 @@
+import { HTTP_STATUS, RESPONSE_MESSAGES, RESPONSE_TYPES, } from "../constants/responseConstants.js";
+import { deleteFromS3, uploadToS3 } from "../services/s3Service.js";
+import { Product } from "../models/index.js";
 import { Space } from "../models/Space.js";
 import { User } from "../models/User.js";
-import { Product } from "../models/index.js";
-import { HTTP_STATUS, RESPONSE_MESSAGES, RESPONSE_TYPES, } from "../constants/responseConstants.js";
 import multer from "multer";
 import path from "path";
-import { uploadToS3, deleteFromS3 } from "../services/s3Service.js";
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
 // File filter for images
@@ -109,23 +109,36 @@ export const createSpace = async (req, res) => {
 export const getSpaceById = async (req, res) => {
     try {
         const { id } = req.params;
+        const userId = req.user.user_id;
         if (!id) {
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 status: RESPONSE_TYPES.ERROR,
                 message: RESPONSE_MESSAGES.SPACE.INVALID_ID,
             });
         }
-        const space = await Space.findByPk(id);
+        const space = await Space.findOne({
+            where: { space_id: id, owner_id: userId },
+        });
         if (!space) {
             return res.status(HTTP_STATUS.NOT_FOUND).json({
                 status: RESPONSE_TYPES.ERROR,
                 message: RESPONSE_MESSAGES.SPACE.NOT_FOUND,
             });
         }
+        const getProducts = await Product.findAll({
+            where: { space_id: id, owner_id: userId },
+        });
+        console.log("getProducts Data:", getProducts);
         return res.status(HTTP_STATUS.OK).json({
             status: RESPONSE_TYPES.SUCCESS,
             message: RESPONSE_MESSAGES.SPACE.FETCH_SUCCESS,
-            data: space,
+            data: {
+                ...space.toJSON(),
+                products: {
+                    total_products: getProducts.length,
+                    total_products_worth: getProducts.reduce((acc, product) => parseFloat(acc) + parseFloat(product.price), 0),
+                },
+            },
         });
     }
     catch (error) {
