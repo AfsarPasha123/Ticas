@@ -1,6 +1,7 @@
 import { Collection, Product, Space } from "../models/index.js";
 import { HTTP_STATUS, RESPONSE_MESSAGES, RESPONSE_TYPES, } from "../constants/responseConstants.js";
 import { getSignedDownloadUrl, uploadToS3 } from "../services/s3Service.js";
+import { Op } from "sequelize";
 import path from "path";
 // Create a new product
 export const createProduct = async (req, res) => {
@@ -127,6 +128,16 @@ export const getProductById = async (req, res) => {
         const product = await Product.findOne({
             where: { product_id, owner_id },
         });
+        const collection = await Collection.findAll({
+            where: { owner_id, collection_id: {
+                    [Op.in]: product?.collection_ids
+                } },
+            attributes: ["collection_name"]
+        });
+        const space = await Space.findOne({
+            where: { owner_id, space_id: product?.space_id },
+            attributes: ["space_name"]
+        });
         if (!product) {
             return res.status(HTTP_STATUS.NOT_FOUND).json({
                 type: RESPONSE_TYPES.ERROR,
@@ -139,6 +150,8 @@ export const getProductById = async (req, res) => {
             message: RESPONSE_MESSAGES.GENERIC.FETCH_SUCCESS,
             data: {
                 ...product.toJSON(),
+                collection_names: collection.map((item) => item.getDataValue("collection_name")),
+                space_name: space?.getDataValue("space_name"),
                 primary_image_url: await getSignedDownloadUrl(product?.primary_image_url),
             },
             status: HTTP_STATUS.OK,
