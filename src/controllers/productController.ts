@@ -107,7 +107,9 @@ export const getAllProducts = async (
   res: Response
 ): Promise<Response> => {
   try {
+    const owner_id = _req.user?.user_id;
     const products = await Product.findAll({
+      where: { owner_id },
       attributes: [
         "product_id",
         "product_name",
