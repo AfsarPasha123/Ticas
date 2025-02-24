@@ -8,7 +8,7 @@
     ".": "./dist/app.js"
   },
   "scripts": {
-    "build": "tsc --resolveJsonModule && cp -r src/database/migrations dist/database/migrations",
+    "build": "tsc --resolveJsonModule",
     "start": "node --experimental-specifier-resolution=node dist/app.js",
     "start:dev": "cross-env NODE_ENV=development node --loader ts-node/esm src/app.ts",
     "dev": "nodemon --exec node --loader ts-node/esm src/app.ts",
