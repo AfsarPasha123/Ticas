@@ -32,6 +32,7 @@ export const createProduct = async (
       });
     }
 
+    console.log("Product place")
     // Check if space exists
     const space = await Space.findByPk(space_id);
     if (!space) {
