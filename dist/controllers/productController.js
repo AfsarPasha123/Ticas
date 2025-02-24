@@ -16,6 +16,7 @@ export const createProduct = async (req, res) => {
                 status: HTTP_STATUS.BAD_REQUEST,
             });
         }
+        console.log("Product place");
         // Check if space exists
         const space = await Space.findByPk(space_id);
         if (!space) {
