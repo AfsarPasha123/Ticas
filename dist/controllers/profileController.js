@@ -1,7 +1,30 @@
-import { HTTP_STATUS, RESPONSE_TYPES, RESPONSE_MESSAGES } from '../constants/responseConstants.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES, RESPONSE_TYPES } from '../constants/responseConstants.js';
+import { getSignedDownloadUrl, uploadToS3 } from "../services/s3Service.js";
+import { Op } from 'sequelize';
 import { User } from "../models/User.js";
 import bcrypt from 'bcrypt';
-import { Op } from 'sequelize';
+import multer from "multer";
+import path from "path";
+// Configure multer for memory storage
+const storage = multer.memoryStorage();
+// File filter for images
+const fileFilter = (_req, file, cb) => {
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
+    if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+    }
+    else {
+        cb(new Error("Invalid file type. Only JPEG, JPG, PNG and GIF images are allowed."));
+    }
+};
+// Export the upload middleware
+export const upload = multer({
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB limit
+    },
+});
 export const updatePassword = async (req, res) => {
     try {
         const { currentPassword, newPassword, confirmPassword } = req.body;
@@ -59,6 +82,7 @@ export const updateProfile = async (req, res) => {
     try {
         const { username, phone_number } = req.body;
         const user_id = req.user?.user_id;
+        const profile_image = req.file;
         // Validating input
         if (!username && !phone_number) {
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
@@ -101,15 +125,32 @@ export const updateProfile = async (req, res) => {
                 });
             }
         }
+        // Upload profile image to S3 if provided
+        let key = "";
+        let uploadedImageUrl = "";
+        let existingProfileImage = user.profile_image;
+        if (profile_image) {
+            const fileExtension = path.extname(profile_image.originalname);
+            key = `profiles/${user_id}/${Date.now()}${fileExtension}`;
+            uploadedImageUrl = await uploadToS3(profile_image, key);
+        }
         // Updating the user in the database
         if (username)
             user.username = username;
         if (phone_number)
             user.phone_number = phone_number;
+        if (profile_image)
+            user.profile_image = existingProfileImage ? existingProfileImage : key;
         await user.save();
         return res.status(HTTP_STATUS.OK).json({
             status: RESPONSE_TYPES.SUCCESS,
             message: RESPONSE_MESSAGES.AUTH.PROFILE_UPDATED,
+            data: {
+                username: user.username,
+                phone_number: user.phone_number,
+                profile_image: existingProfileImage ? await getSignedDownloadUrl(existingProfileImage) :
+                    uploadedImageUrl ? uploadedImageUrl : null,
+            },
         });
     }
     catch (error) {
@@ -138,6 +179,7 @@ export const getProfile = async (req, res) => {
                 username: user.username,
                 phone_number: user.phone_number,
                 email: user.email,
+                profile_image: await getSignedDownloadUrl(user.profile_image)
             },
         });
     }

@@ -1,4 +1,4 @@
-import { Model, DataTypes, Sequelize } from 'sequelize';
+import { DataTypes, Model, Sequelize } from 'sequelize';
 
 interface UserAttributes {
   user_id: number;
@@ -7,6 +7,7 @@ interface UserAttributes {
   password: string;
   phone_number?: number;
   created_at: Date;
+  profile_image?: string | null;
 }
 
 interface UserCreationAttributes {
@@ -14,6 +15,7 @@ interface UserCreationAttributes {
   email?: string;
   password: string;
   phone_number?: number;
+  profile_image?: string | null;
 }
 
 export class User extends Model<UserAttributes, UserCreationAttributes> {
@@ -22,6 +24,7 @@ export class User extends Model<UserAttributes, UserCreationAttributes> {
   declare email: string;
   declare password: string;
   declare phone_number: number;
+  declare profile_image?: string | null;
   declare created_at: Date;
 
   // Add any additional methods here
@@ -57,6 +60,12 @@ export const initUserModel = (sequelize: Sequelize) => {
       type: DataTypes.BIGINT,
       allowNull: true,
       unique: true,
+    },
+    profile_image: {
+      type: DataTypes.STRING(1024),
+      allowNull: true,
+      field: "profile_image",
+      defaultValue: "",
     },
     created_at: {
       type: DataTypes.DATE,

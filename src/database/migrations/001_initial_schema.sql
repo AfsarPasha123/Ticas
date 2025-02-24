@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) UNIQUE,
     password VARCHAR(255) NOT NULL,
     phone_number BIGINT UNIQUE,
+    profile_image VARCHAR(1024),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
