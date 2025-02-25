@@ -1,4 +1,4 @@
-import { deleteFromS3, uploadToS3 } from "../services/s3Service";
+import { deleteFromS3, uploadToS3 } from "../services/s3Service.js";
 import axios from "axios";
 import dotenv from "dotenv";
 import express from "express";
