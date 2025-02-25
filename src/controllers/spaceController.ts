@@ -193,9 +193,17 @@ export const getSpaceById = async (
 
 export const getUserSpaces = async (req: any, res: Response): Promise<Response> => {
   try {
+    const owner_id = req?.user?.user_id
     const spaces = await Space.findAll({
       where: { owner_id: req.user!.user_id }, // Use the authenticated user's ID
     });
+
+    if (!spaces) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        status: RESPONSE_TYPES.ERROR,
+        message: RESPONSE_MESSAGES.SPACE.NOT_FOUND,
+      })
+    }
 
       const signedUrls = await Promise.all(
         spaces.map(async (item) => {
@@ -210,16 +218,28 @@ export const getUserSpaces = async (req: any, res: Response): Promise<Response> 
           }
         })
       );
-  
+
+      const spaceData = await Promise.all(
+        spaces.map(async (item, index) => {
+          
+          const getProducts = await Product.findAll({
+            where: { space_id: item.getDataValue("space_id"), owner_id: owner_id },
+          });
+          return {
+            ...item.toJSON(),
+            space_image: signedUrls[index] || item.getDataValue('space_image'), // Use the signed URL if available, otherwise use the original value
+            products: {
+              total_products: getProducts.length,
+              total_products_worth: +getProducts.reduce((acc: any, product: any) => parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
+            },
+          };
+        })
+      );
+
     return res.status(HTTP_STATUS.OK).json({
       status: RESPONSE_TYPES.SUCCESS,
       message: RESPONSE_MESSAGES.SPACE.FETCH_SUCCESS,
-      data: await Promise.all(spaces.map(async(item, index) => {
-        return {
-          ...item.toJSON(),
-          space_image: signedUrls[index] || item.getDataValue('space_image'), // Use the signed URL if available, otherwise use the original value
-      };
-    }))
+      data: spaceData,
   });
   } catch (error) {
     console.error("Error fetching user spaces:", error);

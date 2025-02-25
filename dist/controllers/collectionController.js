@@ -140,12 +140,23 @@ export const getCollectionDetails = async (req, res) => {
                 status: HTTP_STATUS.NOT_FOUND,
             });
         }
+        const getProducts = await Product.findAll({
+            where: {
+                owner_id: owner_id,
+                [Op.and]: sequelize.literal(`JSON_CONTAINS(collection_ids, '${collection_id}')`)
+            },
+        });
         return res.status(HTTP_STATUS.OK).json({
             type: RESPONSE_TYPES.SUCCESS,
             message: RESPONSE_MESSAGES.COLLECTION.FETCH_SUCCESS,
             data: {
                 ...collection.toJSON(),
                 collection_image: await getSignedDownloadUrl(collection.getDataValue("collection_name")),
+                products: {
+                    total_products: getProducts.length,
+                    total_products_worth: +getProducts.reduce((acc, product) => parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
+                    total_categories: 0, // TODO : Add total categories later
+                },
             },
             status: HTTP_STATUS.OK,
         });
@@ -226,16 +237,26 @@ export const getUserCollections = async (req, res) => {
         const collections = await Collection.findAll({
             where: { owner_id },
         });
+        const collectionData = await Promise.all(collections.map(async (collection) => {
+            const getProducts = await Product.findAll({
+                where: {
+                    owner_id: owner_id,
+                    [Op.and]: sequelize.literal(`JSON_CONTAINS(collection_ids, '${collection.getDataValue("collection_id")}')`)
+                },
+            });
+            return {
+                ...collection.toJSON(),
+                collection_image: await getSignedDownloadUrl(collection.getDataValue('collection_image')),
+                products: {
+                    total_products: getProducts.length,
+                    total_products_worth: +getProducts.reduce((acc, product) => parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
+                },
+            };
+        }));
         return res.status(HTTP_STATUS.OK).json({
             type: RESPONSE_TYPES.SUCCESS,
             message: RESPONSE_MESSAGES.COLLECTION.FETCH_SUCCESS,
-            data: await Promise.all(collections.map(async (collection) => {
-                return {
-                    ...collection.toJSON(),
-                    collection_image: await getSignedDownloadUrl(collection.getDataValue('collection_image')),
-                };
-            })),
-            status: HTTP_STATUS.OK,
+            data: collectionData,
         });
     }
     catch (error) {

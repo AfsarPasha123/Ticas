@@ -6,6 +6,7 @@ export class Space extends Model {
     space_image;
     owner_id;
     created_at;
+    updated_at;
     // Add any additional methods here
     static associate(models) {
         Space.belongsTo(models.User, {
@@ -51,11 +52,16 @@ export const initSpaceModel = (sequelize) => {
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW,
             field: 'created_at'
+        },
+        updated_at: {
+            type: DataTypes.DATE,
+            defaultValue: DataTypes.NOW,
+            field: "updated_at",
         }
     }, {
         sequelize,
         tableName: 'spaces',
-        timestamps: false,
+        timestamps: true,
         underscored: true
     });
     return Space;
