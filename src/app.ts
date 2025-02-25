@@ -16,7 +16,7 @@ import rateLimit from "express-rate-limit";
 import searchRoutes from "./routes/searchRoutes.js";
 // Import database
 import { sequelize } from "./models/index.js";
-// import serpApiSearchRouter from "./controllers/searchProductSerpApi.js"
+import serpApiSearchRouter from "./controllers/searchProductSerpApi.js"
 // Import routes
 import spaceRoutes from "./routes/spaceRoutes.js";
 
@@ -193,7 +193,7 @@ app.use("/collections", collectionRoutes);
 app.use("/auth", authRoutes);
 app.use("/profile", profileRoutes)
 app.use("/search", searchRoutes)
-// app.use("/search-product", serpApiSearchRouter)
+app.use("/search-product", serpApiSearchRouter)
 
 // Centralized route logging
 app._router.stack.forEach((middleware: any) => {
