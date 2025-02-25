@@ -179,7 +179,7 @@ export const getProfile = async (req, res) => {
                 username: user.username,
                 phone_number: user.phone_number,
                 email: user.email,
-                profile_image: await getSignedDownloadUrl(user.profile_image)
+                profile_image: user.profile_image ? await getSignedDownloadUrl(user.profile_image) : null
             },
         });
     }

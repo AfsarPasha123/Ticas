@@ -7,6 +7,7 @@ export class Space extends Model {
   public space_image!: string | null;
   public owner_id!: number;
   public readonly created_at!: Date;
+  public readonly updated_at!: Date;
 
   // Add any additional methods here
   public static associate(models: any) {
@@ -54,11 +55,16 @@ export const initSpaceModel = (sequelize: Sequelize) => {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
       field: 'created_at'
+    },
+    updated_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+      field: "updated_at",
     }
   }, {
     sequelize,
     tableName: 'spaces',
-    timestamps: false,
+    timestamps: true,
     underscored: true
   });
 

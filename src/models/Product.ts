@@ -1,4 +1,4 @@
-import { Model, DataTypes, Sequelize, ModelStatic } from 'sequelize';
+import { DataTypes, Model, ModelStatic, Sequelize } from 'sequelize';
 
 interface ProductAttributes {
     product_id?: number;
