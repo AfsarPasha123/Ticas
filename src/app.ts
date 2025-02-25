@@ -16,7 +16,7 @@ import rateLimit from "express-rate-limit";
 import searchRoutes from "./routes/searchRoutes.js";
 // Import database
 import { sequelize } from "./models/index.js";
-import serpApiSearchRouter from "./controllers/searchProductSerpApi.js";
+import serpApiSearchRouter from "./controllers/searchProductSerpApi.js"
 // Import routes
 import spaceRoutes from "./routes/spaceRoutes.js";
 

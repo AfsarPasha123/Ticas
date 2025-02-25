@@ -1,4 +1,3 @@
-import { HTTP_STATUS, RESPONSE_MESSAGES, RESPONSE_TYPES } from "../constants/responseConstants";
 import { deleteFromS3, uploadToS3 } from "../services/s3Service";
 import axios from "axios";
 import dotenv from "dotenv";
@@ -39,9 +38,9 @@ serpApiSearchRouter.post('/', upload.single('search_image'), async (req, res) =>
     try {
         // 1. Get the uploaded image
         if (!req.file) {
-            return res.status(HTTP_STATUS.BAD_REQUEST).json({
-                type: RESPONSE_TYPES.ERROR,
-                status: HTTP_STATUS.BAD_REQUEST,
+            return res.status(400).json({
+                type: "Error",
+                status: 400,
                 message: "No image file uploaded",
             });
         }
@@ -83,19 +82,19 @@ serpApiSearchRouter.post('/', upload.single('search_image'), async (req, res) =>
             thumbnail: item?.thumbnail || "N/A",
         }));
         // 4. Return formatted product data
-        res.status(HTTP_STATUS.OK).json({
-            type: RESPONSE_TYPES.SUCCESS,
-            status: HTTP_STATUS.OK,
-            message: RESPONSE_MESSAGES.GENERIC.SEARCH_SUCCESS,
+        res.status(200).json({
+            type: "Success",
+            status: 200,
+            message: "Search results fetched successfully.",
             data: productData
         });
     }
     catch (error) {
         console.error('Error:', error);
-        res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-            message: RESPONSE_MESSAGES.GENERIC.NOT_FOUND,
-            type: RESPONSE_TYPES.ERROR,
-            status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        res.status(500).json({
+            message: "Resource not found.",
+            type: "Error",
+            status: 500,
         });
     }
 });
