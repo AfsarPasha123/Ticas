@@ -1,6 +1,6 @@
 // import { HTTP_STATUS, RESPONSE_MESSAGES, RESPONSE_TYPES } from "../constants/responseConstants";
 import { Request, Response } from "express";
-import { deleteFromS3, uploadToS3 } from "../services/s3Service";
+import { deleteFromS3, uploadToS3 } from "../services/s3Service.js";
 
 import axios from "axios";
 import dotenv from "dotenv"
