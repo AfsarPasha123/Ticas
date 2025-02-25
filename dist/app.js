@@ -1,7 +1,22 @@
-import * as path from "path";
-import * as fs from "fs";
-import { fileURLToPath } from "url";
+import * as authController from "./controllers/authController.js";
 import * as dotenv from "dotenv";
+import * as fs from "fs";
+import * as path from "path";
+// Imports
+import express from "express";
+import authRoutes from "./routes/authRoutes.js";
+import collectionRoutes from "./routes/collectionRoutes.js";
+import cors from "cors";
+import { fileURLToPath } from "url";
+import productRoutes from "./routes/productRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js";
+import rateLimit from "express-rate-limit";
+import searchRoutes from "./routes/searchRoutes.js";
+// Import database
+import { sequelize } from "./models/index.js";
+import serpApiSearchRouter from "./controllers/searchProductSerpApi.js";
+// Import routes
+import spaceRoutes from "./routes/spaceRoutes.js";
 // Robust Environment Configuration
 function loadEnvironmentConfig() {
     const __filename = fileURLToPath(import.meta.url);
@@ -52,20 +67,6 @@ function loadEnvironmentConfig() {
 }
 // Configuration
 const config = loadEnvironmentConfig();
-// Imports
-import express from "express";
-import rateLimit from "express-rate-limit";
-import cors from "cors";
-// Import routes
-import spaceRoutes from "./routes/spaceRoutes.js";
-import productRoutes from "./routes/productRoutes.js";
-import collectionRoutes from "./routes/collectionRoutes.js";
-import authRoutes from "./routes/authRoutes.js";
-import profileRoutes from "./routes/profileRoutes.js";
-import searchRoutes from "./routes/searchRoutes.js";
-import * as authController from "./controllers/authController.js";
-// Import database
-import { sequelize } from "./models/index.js";
 const app = express();
 const port = config.server.port;
 // Middleware for parsing JSON with increased size limit and robust error handling
@@ -149,6 +150,7 @@ app.use("/collections", collectionRoutes);
 app.use("/auth", authRoutes);
 app.use("/profile", profileRoutes);
 app.use("/search", searchRoutes);
+app.use("/search-product", serpApiSearchRouter);
 // Centralized route logging
 app._router.stack.forEach((middleware) => {
     if (middleware.route) {
