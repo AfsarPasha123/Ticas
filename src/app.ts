@@ -175,8 +175,8 @@ const createLimiter = (windowMs: number, max: number) =>
     skipFailedRequests: true,
   });
 
-const generalLimiter = createLimiter(15 * 60 * 1000, 100);
-const authLimiter = createLimiter(5 * 60 * 1000, 50);
+const generalLimiter = createLimiter(15 * 60 * 1000, 2000);
+const authLimiter = createLimiter(5 * 60 * 1000, 500);
 
 // Apply rate limiting
 app.use(generalLimiter);
