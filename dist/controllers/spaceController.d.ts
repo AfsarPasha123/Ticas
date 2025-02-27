@@ -1,6 +1,6 @@
-import { Response } from 'express';
-import { AuthenticatedRequest } from '../middleware/authMiddleware.js';
-import multer from 'multer';
+import { AuthenticatedRequest } from "../middleware/authMiddleware.js";
+import { Response } from "express";
+import multer from "multer";
 export declare const upload: multer.Multer;
 interface SpaceRequest extends AuthenticatedRequest {
     body: {
@@ -11,5 +11,6 @@ interface SpaceRequest extends AuthenticatedRequest {
 }
 export declare const createSpace: (req: SpaceRequest, res: Response) => Promise<Response>;
 export declare const getSpaceById: (req: SpaceRequest, res: Response) => Promise<Response>;
-export declare const getUserSpaces: (req: SpaceRequest, res: Response) => Promise<Response>;
+export declare const getUserSpaces: (req: any, res: Response) => Promise<Response>;
+export declare const getSpaceProducts: (req: any, res: Response) => Promise<Response>;
 export {};

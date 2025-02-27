@@ -6,6 +6,7 @@ export declare class Space extends Model {
     space_image: string | null;
     owner_id: number;
     readonly created_at: Date;
+    readonly updated_at: Date;
     static associate(models: any): void;
 }
 export declare const initSpaceModel: (sequelize: Sequelize) => typeof Space;

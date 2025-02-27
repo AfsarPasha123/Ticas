@@ -1,4 +1,5 @@
-import { Model, DataTypes, Sequelize, ModelStatic } from 'sequelize';
+import { DataTypes, Model, ModelStatic, Sequelize } from 'sequelize';
+import { TagModel } from './Tag';
 
 interface ProductAttributes {
     product_id?: number;
@@ -13,7 +14,11 @@ interface ProductAttributes {
     updated_at?: Date;
 }
 
-interface ProductModel extends Model<ProductAttributes>, ProductAttributes {}
+interface ProductModel extends Model<ProductAttributes>, ProductAttributes {
+    tags?: TagModel[];
+    addTags: (tagIds: number[]) => Promise<void>;
+    setTags: (tagIds: number[]) => Promise<void>;
+}
 
 export const Product = (sequelize: Sequelize, DataTypes: any) => {
     return sequelize.define<ProductModel>(

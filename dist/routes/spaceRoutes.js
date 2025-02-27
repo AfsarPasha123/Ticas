@@ -1,7 +1,7 @@
+import { ListBucketsCommand, S3Client } from '@aws-sdk/client-s3';
+import { createSpace, getSpaceById, getSpaceProducts, getUserSpaces, upload } from '../controllers/spaceController.js';
 import express from 'express';
-import { createSpace, getSpaceById, getUserSpaces, upload } from '../controllers/spaceController.js';
 import { authenticateToken } from '../middleware/authMiddleware.js';
-import { S3Client, ListBucketsCommand } from '@aws-sdk/client-s3';
 const router = express.Router();
 // Protected routes - require authentication
 router.use(authenticateToken);
@@ -29,8 +29,11 @@ router.get('/test-s3', async (_req, res) => {
 });
 // Route for creating a space with image upload
 router.post('/', upload.single('space_image'), createSpace);
-// Get routes
-router.get('/:id', getSpaceById);
+// Get all spaces for a user
 router.get('/user', getUserSpaces);
+// Get all products in a space
+router.get('/:id/products', getSpaceProducts);
+// Get a single space by ID
+router.get('/:id', getSpaceById);
 export default router;
 //# sourceMappingURL=spaceRoutes.js.map

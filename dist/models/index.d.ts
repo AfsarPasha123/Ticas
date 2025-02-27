@@ -1,8 +1,12 @@
-import { Sequelize, QueryTypes } from 'sequelize';
+import { QueryTypes, Sequelize } from 'sequelize';
 declare const sequelize: Sequelize;
 export declare const User: typeof import("./User.js").User;
 export declare const Space: typeof import("./Space.js").Space;
-export declare const Product: import("sequelize").ModelStatic<import("./Product.js").ProductModel>;
 export declare const Collection: typeof import("./Collection.js").Collection;
+export declare const Product: import("sequelize").ModelStatic<import("./Product.js").ProductModel>;
+export declare const Tag: import("sequelize").ModelStatic<import("./Tag.js").TagModel>;
+export declare const ProductTag: import("sequelize").ModelStatic<import("./ProductTag.js").ProductTagModel>;
+export declare const Category: import("sequelize").ModelStatic<import("./Category.js").CategoryModel>;
+export declare const CategoryTag: import("sequelize").ModelStatic<import("./CategoryTag.js").CategoryTagModel>;
 declare const syncDatabase: () => Promise<void>;
 export { sequelize, syncDatabase, QueryTypes };

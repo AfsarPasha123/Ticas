@@ -18,7 +18,11 @@
     "db:init:dev": "cross-env NODE_ENV=development node --no-warnings --loader ts-node/esm src/database/initDb.ts",
     "db:init:test": "cross-env NODE_ENV=test node --no-warnings --loader ts-node/esm src/database/initDb.ts",
     "db:init:prod": "cross-env NODE_ENV=production node --no-warnings --loader ts-node/esm src/database/initDb.ts",
-    "db:reinit": "cross-env NODE_ENV=development node --no-warnings --loader ts-node/esm src/database/reinitDb.ts"
+    "db:reinit": "cross-env NODE_ENV=development node --no-warnings --loader ts-node/esm src/database/reinitDb.ts",
+    "db:migrate:dev": "cross-env NODE_ENV=development node --no-warnings --loader ts-node/esm src/database/migrate.ts",
+    "db:migrate:prod": "cross-env NODE_ENV=production node --no-warnings --loader ts-node/esm dist/database/migrate.js",
+    "import:tags": "cross-env NODE_ENV=development node --no-warnings --loader ts-node/esm scripts/import-tags.ts",
+    "import:categories": "cross-env NODE_ENV=development node --no-warnings --loader ts-node/esm scripts/import-categories.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.741.0",

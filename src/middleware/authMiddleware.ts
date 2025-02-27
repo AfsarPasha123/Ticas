@@ -4,12 +4,14 @@ import { HTTP_STATUS, RESPONSE_MESSAGES, RESPONSE_TYPES } from '../constants/res
 import config from '../config/environment.js';
 import { User } from '../models/User.js';
 
+export interface UserPayload {
+  user_id: number;
+  email: string;
+  username?: string;
+}
+
 export interface AuthenticatedRequest extends Request {
-  user?: {
-    user_id: number;
-    email: string;
-    username: string;
-  };
+  user?: UserPayload;
 }
 
 export const authenticateToken = async (
@@ -35,11 +37,7 @@ export const authenticateToken = async (
   }
 
   try {
-    const decoded = jwt.verify(token, config.jwt.secret) as {
-      user_id: number;
-      email: string;
-      username: string;
-    };
+    const decoded = jwt.verify(token, config.jwt.secret) as UserPayload;
 
     console.log('Decoded Token:', decoded);
 
@@ -49,26 +47,23 @@ export const authenticateToken = async (
       console.error(`User ${decoded.user_id} from token not found in database`);
       return res.status(HTTP_STATUS.UNAUTHORIZED).json({
         status: RESPONSE_TYPES.ERROR,
-        message: 'Invalid user token'
+        message: RESPONSE_MESSAGES.AUTH.INVALID_TOKEN
       });
     }
 
-    // Attach user to request
+    // Attach user information to the request
     req.user = {
-      user_id: decoded.user_id,
-      email: decoded.email,
-      username: decoded.username
+      user_id: user.user_id,
+      email: user.email,
+      username: user.username || ''
     };
 
-    console.log('User authenticated successfully:', req.user);
-    
     next();
   } catch (error) {
     console.error('Token verification error:', error);
     return res.status(HTTP_STATUS.UNAUTHORIZED).json({
       status: RESPONSE_TYPES.ERROR,
-      message: 'Invalid or expired token',
-      error: String(error)
+      message: RESPONSE_MESSAGES.AUTH.INVALID_TOKEN
     });
   }
 };

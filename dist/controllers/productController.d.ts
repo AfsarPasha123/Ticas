@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response } from "express";
 interface MulterRequest extends Request {
     file?: Express.Multer.File;
 }
@@ -7,4 +7,6 @@ export declare const getAllProducts: (_req: Request, res: Response) => Promise<R
 export declare const getProductById: (req: Request, res: Response) => Promise<Response>;
 export declare const updateProduct: (req: MulterRequest, res: Response) => Promise<Response>;
 export declare const deleteProduct: (req: Request, res: Response) => Promise<Response>;
+export declare const searchProductsByTags: (req: Request, res: Response) => Promise<Response>;
+export declare const searchProductsByCategory: (req: Request, res: Response) => Promise<Response>;
 export {};

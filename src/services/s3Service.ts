@@ -1,6 +1,7 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+
 import config from '../config/environment.js';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 // Use default credential provider
 const s3Client = new S3Client({
@@ -55,7 +56,7 @@ export const uploadToS3 = async (file: Express.Multer.File, key: string): Promis
             key
         });
 
-        return url;
+        return await getSignedDownloadUrl(key);
     } catch (error) {
         console.error('S3 upload error:', {
             error,

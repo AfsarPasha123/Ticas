@@ -1,0 +1,184 @@
+{
+  "categories": [
+    {
+      "name": "Home & Kitchen",
+      "tags": [
+        "Cutlery",
+        "Napkin Holders",
+        "Rice Cookers",
+        "Non-Stick Cookware",
+        "Induction Cooktops",
+        "Slow Cookers",
+        "Cooking Utensils",
+        "Mixing Bowls",
+        "Storage Bins",
+        "Measuring Cups",
+        "Measuring Spoons & Cups",
+        "Blenders & Mixers",
+        "Digital Kitchen Scales",
+        "Pasta Makers",
+        "Cast Iron Skillets",
+        "Glass Bakeware",
+        "Silicone Baking Mats",
+        "Baking Sheets",
+        "Spice Racks",
+        "Sugar & Flour Containers",
+        "Oven Mitts"
+      ]
+    },
+    {
+      "name": "Electronics",
+      "tags": [
+        "Laptops",
+        "Gaming Consoles",
+        "Smart Home Devices",
+        "E-Readers",
+        "Home Security Cameras",
+        "Digital Clocks",
+        "Vacuum Sealers",
+        "Printers & Scanners",
+        "Memory Cards",
+        "Smartphones",
+        "VR Headsets",
+        "Smart Plugs",
+        "Smart Light Bulbs",
+        "Streaming Devices",
+        "Thermostats",
+        "Smart Speakers",
+        "TVs & Audio",
+        "Headphones"
+      ]
+    },
+    {
+      "name": "Appliances",
+      "tags": [
+        "Microwaves",
+        "Refrigerators",
+        "Ovens & Stovetops",
+        "Electric Grills",
+        "Deep Fryers",
+        "Air Fryers",
+        "Food Dehydrators",
+        "Dishwashing",
+        "Waffle Makers",
+        "Ice Cream Makers",
+        "Vacuum Cleaners",
+        "Robot Vacuums",
+        "Handheld Vacuums",
+        "Fabric Steamers"
+      ]
+    },
+    {
+      "name": "Furniture & Home Decor",
+      "tags": [
+        "Beds & Mattresses",
+        "Mattress Covers",
+        "Bed Frames",
+        "Closet Organizers",
+        "Wall Art",
+        "Decorative Mirrors",
+        "Curtains & Blinds",
+        "Photo Albums",
+        "Frames",
+        "Storage & Organization",
+        "Pillows & Cushions",
+        "Quilts",
+        "Duvets",
+        "Cushion Covers",
+        "Table Cloths"
+      ]
+    },
+    {
+      "name": "Health & Personal Care",
+      "tags": [
+        "Skincare",
+        "Soap & Body Wash",
+        "Razors & Shaving Cream",
+        "Makeup",
+        "Toothpaste",
+        "Shampoo",
+        "Hair Care",
+        "Face Masks",
+        "Hand Sanitizer",
+        "Pain Relievers",
+        "Vitamins & Supplements"
+      ]
+    },
+    {
+      "name": "Fitness & Sports",
+      "tags": [
+        "Treadmills",
+        "Resistance Bands",
+        "Jump Ropes",
+        "Dumbbells",
+        "Yoga Mats",
+        "Fitness Equipment",
+        "Sports Equipment",
+        "Adult Bicycles",
+        "Scooters",
+        "Helmets",
+        "Skateboards",
+        "Kids' Bikes"
+      ]
+    },
+    {
+      "name": "Outdoor & Garden",
+      "tags": [
+        "Outdoor Tables",
+        "Patio Chairs",
+        "Outdoor Furniture",
+        "Gardening Supplies",
+        "Soil & Fertilizers",
+        "Flower Pots",
+        "Lawn Mowers",
+        "Watering Cans",
+        "Hedge Trimmers",
+        "Fire Pits",
+        "Camping Gear"
+      ]
+    },
+    {
+      "name": "Office Supplies",
+      "tags": [
+        "Keyboard & Mouse",
+        "Monitor Stands",
+        "Desk Lamps",
+        "Office Chairs",
+        "Printers & Scanners",
+        "Paper Towels",
+        "Notebooks & Journals",
+        "Staplers",
+        "Tape Dispensers",
+        "Paper Clips",
+        "Envelopes & Stamps"
+      ]
+    },
+    {
+      "name": "Automotive",
+      "tags": [
+        "Car Care",
+        "Jump Starters",
+        "Steering Wheel Covers",
+        "Seat Covers",
+        "Car Air Fresheners",
+        "Car Cleaning Kits",
+        "Emergency Road Kits",
+        "Bike Racks",
+        "Trunk Organizers",
+        "Roof Racks"
+      ]
+    },
+    {
+      "name": "Toys & Games",
+      "tags": [
+        "Toys",
+        "Board Games",
+        "Video Games",
+        "Board Books",
+        "Comic Books",
+        "Graphic Novels",
+        "Games"
+      ]
+    }
+  ]
+}

@@ -1,9 +1,13 @@
-import { Sequelize, QueryTypes } from 'sequelize';
-import { initUserModel } from './User.js';
-import { initSpaceModel } from './Space.js';
-import { initProductModel } from './Product.js';
-import { initCollectionModel } from './Collection.js';
+import { QueryTypes, Sequelize } from 'sequelize';
 import config from '../config/environment.js';
+import { initCollectionModel } from './Collection.js';
+import { initProductModel } from './Product.js';
+import { initSpaceModel } from './Space.js';
+import { initTagModel } from './Tag.js';
+import { initProductTagModel } from './ProductTag.js';
+import { initUserModel } from './User.js';
+import { initCategoryModel } from './Category.js';
+import { initCategoryTagModel } from './CategoryTag.js';
 const sequelize = new Sequelize({
     dialect: 'mysql',
     host: config.database.host,
@@ -24,13 +28,18 @@ const sequelize = new Sequelize({
 // Initialize models
 export const User = initUserModel(sequelize);
 export const Space = initSpaceModel(sequelize);
-export const Product = initProductModel(sequelize);
 export const Collection = initCollectionModel(sequelize);
+export const Product = initProductModel(sequelize);
+export const Tag = initTagModel(sequelize);
+export const ProductTag = initProductTagModel(sequelize);
+export const Category = initCategoryModel(sequelize);
+export const CategoryTag = initCategoryTagModel(sequelize);
 // Set up associations
 User.hasMany(Space, { foreignKey: 'owner_id' });
 Space.belongsTo(User, { foreignKey: 'owner_id' });
 Product.belongsTo(User, { foreignKey: 'owner_id' });
 Product.belongsTo(Space, { foreignKey: 'space_id' });
+Space.hasMany(Product, { foreignKey: 'space_id' });
 // Collection associations
 User.hasMany(Collection, { foreignKey: 'owner_id' });
 Collection.belongsTo(User, { foreignKey: 'owner_id' });
@@ -44,6 +53,28 @@ Collection.belongsToMany(Product, {
     through: 'product_collections',
     foreignKey: 'collection_id',
     otherKey: 'product_id'
+});
+// Many-to-Many relationship between Products and Tags
+Product.belongsToMany(Tag, {
+    through: ProductTag,
+    foreignKey: 'product_id',
+    otherKey: 'tag_id'
+});
+Tag.belongsToMany(Product, {
+    through: ProductTag,
+    foreignKey: 'tag_id',
+    otherKey: 'product_id'
+});
+// Many-to-Many relationship between Categories and Tags
+Category.belongsToMany(Tag, {
+    through: CategoryTag,
+    foreignKey: 'category_id',
+    otherKey: 'tag_id'
+});
+Tag.belongsToMany(Category, {
+    through: CategoryTag,
+    foreignKey: 'tag_id',
+    otherKey: 'category_id'
 });
 // Sync database
 const syncDatabase = async () => {

@@ -1,4 +1,4 @@
-import { Model, DataTypes } from 'sequelize';
+import { DataTypes, Model } from 'sequelize';
 export class User extends Model {
     // Add any additional methods here
     static associate(models) {
@@ -32,6 +32,12 @@ export const initUserModel = (sequelize) => {
             type: DataTypes.BIGINT,
             allowNull: true,
             unique: true,
+        },
+        profile_image: {
+            type: DataTypes.STRING(1024),
+            allowNull: true,
+            field: "profile_image",
+            defaultValue: "",
         },
         created_at: {
             type: DataTypes.DATE,

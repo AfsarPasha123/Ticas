@@ -24,7 +24,6 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
-.env.development
 .env.test
 .env.production
 
@@ -35,3 +34,4 @@ Thumbs.db
 # Build artifacts
 build/
 *.tgz
+

@@ -1,8 +1,9 @@
+import { HTTP_STATUS, RESPONSE_MESSAGES, RESPONSE_TYPES } from '../constants/responseConstants.js';
 import { Request, Response } from 'express';
+
+import { User } from '../models/User.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { HTTP_STATUS, RESPONSE_MESSAGES, RESPONSE_TYPES } from '../constants/responseConstants.js';
-import { User } from '../models/User.js';
 
 interface AuthRequest extends Request {
   body: {
@@ -60,13 +61,13 @@ export const login = async (req: AuthRequest, res: Response): Promise<Response> 
     }
 
     const token = jwt.sign(
-      { user_id: user.user_id, email: user.email },
+      { user_id: user.user_id, email: user.email, username: user.username || '' },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '24h' }
     );
 
     const refreshToken = jwt.sign(
-      { user_id: user.user_id, email: user.email },
+      { user_id: user.user_id, email: user.email, username: user.username || '' },
       process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key',
       { expiresIn: '30d' }
     );
@@ -163,14 +164,16 @@ export const register = async (req: AuthRequest, res: Response): Promise<Respons
       username,
       email,
       password: hashedPassword,
-      phone_number
+      phone_number,
+      profile_image: null
     });
 
     console.log('Registration successful for user:', username);
     return res.status(HTTP_STATUS.CREATED).json({
       message: "User registered successfully",
       user_id: user.user_id,
-      email: user.email
+      email: user.email,
+      profile_image: user?.profile_image
     });
 
   } catch (error: unknown) {

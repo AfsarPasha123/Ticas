@@ -20,6 +20,11 @@ export declare const RESPONSE_MESSAGES: {
         readonly TOKEN_REFRESH_SUCCESS: "Token refreshed successfully";
         readonly TOKEN_REQUIRED: "Authentication token is required";
         readonly MISSING_FIELDS: "Required fields are missing.";
+        readonly MISMATCHED_PASSWORDS: "New password and confirmation password do not match.";
+        readonly PASSWORD_UPDATED: "Password updated successfully.";
+        readonly USERNAME_EXISTS: "Username already exists.";
+        readonly PHONE_NUMBER_EXISTS: "Phone number already exists.";
+        readonly PROFILE_UPDATED: "Profile updated successfully.";
     };
     readonly SPACE: {
         readonly CREATED: "Space created successfully.";
@@ -52,6 +57,8 @@ export declare const RESPONSE_MESSAGES: {
         readonly NOT_FOUND: "Resource not found.";
         readonly FORBIDDEN: "Access denied.";
         readonly FETCH_SUCCESS: "Resources retrieved successfully.";
+        readonly SEARCH_SUCCESS: "Search results fetched successfully.";
+        readonly QUERY_REQUIRED: "Search query is required.";
     };
 };
 export declare const RESPONSE_TYPES: {

@@ -1,4 +1,4 @@
-import { Model, DataTypes, Sequelize } from 'sequelize';
+import { DataTypes, Model, Sequelize } from 'sequelize';
 
 export class Space extends Model {
   public space_id!: number;
@@ -7,6 +7,7 @@ export class Space extends Model {
   public space_image!: string | null;
   public owner_id!: number;
   public readonly created_at!: Date;
+  public readonly updated_at!: Date;
 
   // Add any additional methods here
   public static associate(models: any) {
@@ -38,7 +39,8 @@ export const initSpaceModel = (sequelize: Sequelize) => {
     space_image: {
       type: DataTypes.STRING(255),
       allowNull: true,
-      field: 'space_image'
+      field: 'space_image',
+      defaultValue: "",
     },
     owner_id: {
       type: DataTypes.INTEGER,
@@ -53,11 +55,16 @@ export const initSpaceModel = (sequelize: Sequelize) => {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
       field: 'created_at'
+    },
+    updated_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+      field: "updated_at",
     }
   }, {
     sequelize,
     tableName: 'spaces',
-    timestamps: false,
+    timestamps: true,
     underscored: true
   });
 
