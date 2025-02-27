@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Compiled output
+*.js.map
+
+# IDE files
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Sensitive configuration
+*.pem
+*.key
+
+# Environment variables
+
+.env.local
+.env.*.local
+
+.env.test
+.env.production
+
+# Temporary files
+*.tmp
+*.bak
+
+# Build artifacts
+build/
+*.tgz
+
