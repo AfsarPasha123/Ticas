@@ -1,5 +1,5 @@
 // filepath: /home/dell/Work/Tilicho Work/tidycasa/Ticas/Ticas/generate-migration.js
-const { execSync } = require('child_process');
+import { execSync } from 'child_process';
 
 const migrationName = process.argv[2];
 

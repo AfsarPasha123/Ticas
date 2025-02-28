@@ -27,7 +27,6 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.741.0",
     "@aws-sdk/s3-request-presigner": "^3.741.0",
-    "@types/cors": "^2.8.17",
     "@types/multer": "^1.4.12",
     "@types/sequelize": "^4.28.20",
     "axios": "^1.7.9",
@@ -44,6 +43,7 @@
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/chai": "^4.3.5",
+    "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.8",
     "@types/mocha": "^10.0.1",
