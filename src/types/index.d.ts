@@ -25,11 +25,3 @@ export interface DatabaseConfig {
   connectionLimit: number;
   queueLimit: number;
 }
-
-export interface CustomRequest extends Request {
-  user?: {
-    user_id: number;
-    username: string;
-    email: string;
-  };
-}
