@@ -17,6 +17,7 @@ import { sequelize } from "./models/index.js";
 // Import routes
 import spaceRoutes from "./routes/spaceRoutes.js";
 import donationRoutes from "./routes/donationRoutes.js"; // Import the donation routes
+import serpApiSearchRouter from "./controllers/searchProductSerpApi.js";
 // Robust Environment Configuration
 function loadEnvironmentConfig() {
     const __filename = fileURLToPath(import.meta.url);
@@ -150,6 +151,7 @@ app.use("/collections", collectionRoutes);
 app.use("/auth", authRoutes);
 app.use("/profile", profileRoutes);
 app.use("/search", searchRoutes);
+app.use("/search-product", serpApiSearchRouter);
 // Add donation routes
 app.use("/donations", donationRoutes); // Add the donation routes here
 // Centralized route logging
