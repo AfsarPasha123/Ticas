@@ -54,6 +54,11 @@ export const Product = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: DataTypes.NOW,
         },
+        donation_status: {
+            type: DataTypes.ENUM('in_donation', 'donated'),
+            allowNull: true,
+            defaultValue: null,
+        },
     }, {
         tableName: 'products',
         timestamps: true,

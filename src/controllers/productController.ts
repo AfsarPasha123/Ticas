@@ -117,18 +117,26 @@ export const getAllProducts = async (
         "description",
         "price",
         "primary_image_url",
+        "donation_status", // Include donation status in the response
       ],
     });
+
+    // Customize the JSON response
+    const customizedProducts = await Promise.all(products.map(async (product) => {
+      const productJSON = product.toJSON();
+      if (!productJSON.donation_status) {
+        delete productJSON.donation_status;
+      }
+      return {
+        ...productJSON,
+        primary_image_url: await getSignedDownloadUrl(product?.primary_image_url!),
+      };
+    }));
 
     return res.status(HTTP_STATUS.OK).json({
       type: RESPONSE_TYPES.SUCCESS,
       message: RESPONSE_MESSAGES.GENERIC.FETCH_SUCCESS,
-      data: await Promise.all(products.map(async (product) => {
-        return {
-          ...product.toJSON(),
-          primary_image_url: await getSignedDownloadUrl(product?.primary_image_url!),
-        };
-      })),
+      data: customizedProducts, // Use customized products
       status: HTTP_STATUS.OK,
     });
   } catch (error) {
@@ -148,7 +156,7 @@ export const getProductById = async (
 ): Promise<Response> => {
   try {
     const product_id = parseInt(req.params.id);
-    const owner_id = req?.user?.user_id
+    const owner_id = req?.user?.user_id;
 
     if (isNaN(product_id)) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
@@ -162,18 +170,6 @@ export const getProductById = async (
       where: { product_id, owner_id },
     });
 
-    const collection = await Collection.findAll({
-      where : { owner_id, collection_id: {
-        [Op.in]: product?.collection_ids
-      } },
-      attributes: ["collection_name"]
-    })
-
-    const space = await Space.findOne({
-      where: { owner_id, space_id: product?.space_id },
-      attributes: ["space_name"]
-    })
-
     if (!product) {
       return res.status(HTTP_STATUS.NOT_FOUND).json({
         type: RESPONSE_TYPES.ERROR,
@@ -182,12 +178,27 @@ export const getProductById = async (
       });
     }
 
+    const collection = await Collection.findAll({
+      where: { owner_id, collection_id: { [Op.in]: product?.collection_ids } },
+      attributes: ["collection_name"],
+    });
+
+    const space = await Space.findOne({
+      where: { owner_id, space_id: product?.space_id },
+      attributes: ["space_name"],
+    });
+
+    const productJSON = product.toJSON();
+    if (!productJSON.donation_status) {
+      delete productJSON.donation_status;
+    }
+
     return res.status(HTTP_STATUS.OK).json({
       type: RESPONSE_TYPES.SUCCESS,
       message: RESPONSE_MESSAGES.GENERIC.FETCH_SUCCESS,
       data: {
-        ...product.toJSON(),
-        collection_names: collection.map((item)=>item.getDataValue("collection_name")),
+        ...productJSON,
+        collection_names: collection.map((item) => item.getDataValue("collection_name")),
         space_name: space?.getDataValue("space_name"),
         primary_image_url: await getSignedDownloadUrl(product?.primary_image_url!),
       },

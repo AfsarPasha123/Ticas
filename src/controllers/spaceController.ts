@@ -167,20 +167,40 @@ export const getSpaceById = async (
 
     const getProducts = await Product.findAll({
       where: { space_id: id, owner_id: userId },
-    })
+      attributes: [
+        "product_id",
+        "product_name",
+        "description",
+        "price",
+        "primary_image_url",
+        "donation_status", // Include donation status in the response
+      ],
+    });
+
+    // Customize the JSON response
+    const customizedProducts = await Promise.all(getProducts.map(async (product) => {
+      const productJSON = product.toJSON();
+      if (!productJSON.donation_status) {
+        delete productJSON.donation_status;
+      }
+      return {
+        ...productJSON,
+        primary_image_url: await getSignedDownloadUrl(product?.primary_image_url!),
+      };
+    }));
 
     return res.status(HTTP_STATUS.OK).json({
       status: RESPONSE_TYPES.SUCCESS,
       message: RESPONSE_MESSAGES.SPACE.FETCH_SUCCESS,
       data: {
-              ...space.toJSON(),
-              space_image: await getSignedDownloadUrl(space.getDataValue('space_image')!),
-              products: {
-                total_products: getProducts.length,
-                total_products_worth: +getProducts.reduce((acc:any, product: any) => parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
-                total_categories: 0,  // TODO : Add total categories later
-              },
-            },
+        ...space.toJSON(),
+        space_image: await getSignedDownloadUrl(space.getDataValue('space_image')!),
+        products: {
+          total_products: customizedProducts.length,
+          total_products_worth: +customizedProducts.reduce((acc: any, product: any) => parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
+          total_categories: 0,  // TODO : Add total categories later
+        },
+      },
     });
   } catch (error) {
     console.error("Error fetching space:", error);
@@ -190,7 +210,6 @@ export const getSpaceById = async (
     });
   }
 };
-
 export const getUserSpaces = async (req: any, res: Response): Promise<Response> => {
   try {
     const owner_id = req?.user?.user_id
@@ -273,17 +292,33 @@ export const getSpaceProducts = async (req: any, res: Response): Promise<Respons
     }
 
     const products = await Product.findAll({
-      where: { space_id: space_id, owner_id: userId},
+      where: { space_id: space_id, owner_id: userId },
+      attributes: [
+        "product_id",
+        "product_name",
+        "description",
+        "price",
+        "primary_image_url",
+        "donation_status", // Include donation status in the response
+      ],
     });
+
+    // Customize the JSON response
+    const customizedProducts = await Promise.all(products.map(async (product) => {
+      const productJSON = product.toJSON();
+      if (!productJSON.donation_status) {
+        delete productJSON.donation_status;
+      }
+      return {
+        ...productJSON,
+        primary_image_url: await getSignedDownloadUrl(product?.primary_image_url!),
+      };
+    }));
+
     return res.status(HTTP_STATUS.OK).json({
       status: RESPONSE_TYPES.SUCCESS,
       message: RESPONSE_MESSAGES.GENERIC.FETCH_SUCCESS,
-      data: await Promise.all(products.map(async (product) => {
-        return {
-          ...product.toJSON(),
-          primary_image_url: await getSignedDownloadUrl(product?.primary_image_url!),
-        };
-      }))
+      data: customizedProducts, // Use customized products
     });
   } catch (error) {
     console.error("Error fetching space products:", error);

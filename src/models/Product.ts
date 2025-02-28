@@ -11,6 +11,7 @@ interface ProductAttributes {
     collection_ids?: number[];
     created_at?: Date;
     updated_at?: Date;
+    donation_status?: 'in_donation' | 'donated' | null; // New field for donation status
 }
 
 interface ProductModel extends Model<ProductAttributes>, ProductAttributes {}
@@ -72,6 +73,11 @@ export const Product = (sequelize: Sequelize, DataTypes: any) => {
                 allowNull: false,
                 defaultValue: DataTypes.NOW,
             },
+            donation_status: { // New field for donation status
+                type: DataTypes.ENUM('in_donation', 'donated'),
+                allowNull: true,
+                defaultValue: null,
+            },
         },
         {
             tableName: 'products',
@@ -85,5 +91,4 @@ export const Product = (sequelize: Sequelize, DataTypes: any) => {
 export const initProductModel = (sequelize: Sequelize): ModelStatic<ProductModel> => {
     return Product(sequelize, DataTypes);
 };
-
 export type { ProductAttributes, ProductModel };
