@@ -2,9 +2,9 @@ import { Model, ModelStatic, Sequelize } from 'sequelize';
 interface ProductAttributes {
     product_id?: number;
     product_name: string;
-    description: string;
-    primary_image_url?: string;
-    price: number;
+    description?: string;
+    primary_image_url: string;
+    price?: number;
     owner_id: number;
     space_id?: number;
     collection_ids?: number[];

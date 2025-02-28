@@ -62,12 +62,10 @@ export const createSpace = async (
     const description = req.body.description;
     const space_image = req.file;
 
-    if (!space_name || !description) {
+    if (!space_name ) {
       console.log(
         "Missing Fields - space_name:",
         space_name,
-        "description:",
-        description
       );
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         status: RESPONSE_TYPES.ERROR,
@@ -185,7 +183,7 @@ export const getSpaceById = async (
       }
       return {
         ...productJSON,
-        primary_image_url: await getSignedDownloadUrl(product?.primary_image_url!),
+        primary_image_url: product?.primary_image_url ? await getSignedDownloadUrl(product?.primary_image_url!) : null,
       };
     }));
 
@@ -194,7 +192,7 @@ export const getSpaceById = async (
       message: RESPONSE_MESSAGES.SPACE.FETCH_SUCCESS,
       data: {
         ...space.toJSON(),
-        space_image: await getSignedDownloadUrl(space.getDataValue('space_image')!),
+        space_image: space.getDataValue('space_image') ? await getSignedDownloadUrl(space.getDataValue('space_image')!) : null,
         products: {
           total_products: customizedProducts.length,
           total_products_worth: +customizedProducts.reduce((acc: any, product: any) => parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
@@ -228,7 +226,7 @@ export const getUserSpaces = async (req: any, res: Response): Promise<Response> 
         spaces.map(async (item) => {
           const spaceImage = item.getDataValue('space_image');
           if (spaceImage) {
-            const signedUrl = await getSignedDownloadUrl(spaceImage);
+            const signedUrl = spaceImage ? await getSignedDownloadUrl(spaceImage) : null;
             console.log(`Signed URL for ${spaceImage}: ${signedUrl}`);
             return signedUrl;
           } else {
@@ -311,7 +309,7 @@ export const getSpaceProducts = async (req: any, res: Response): Promise<Respons
       }
       return {
         ...productJSON,
-        primary_image_url: await getSignedDownloadUrl(product?.primary_image_url!),
+        primary_image_url: product?.primary_image_url ? await getSignedDownloadUrl(product?.primary_image_url!) : null,
       };
     }));
 

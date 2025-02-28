@@ -44,8 +44,8 @@ export const createCollection = async (req, res) => {
                 status: HTTP_STATUS.UNAUTHORIZED,
             });
         }
-        if (!collection_name || !description) {
-            console.log("Missing Fields - collection_name:", collection_name, "description:", description);
+        if (!collection_name) {
+            console.log("Missing Fields - collection_name:", collection_name);
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 type: RESPONSE_TYPES.ERROR,
                 message: RESPONSE_MESSAGES.GENERIC.MISSING_FIELDS,
@@ -162,7 +162,7 @@ export const getCollectionDetails = async (req, res) => {
             }
             return {
                 ...productJSON,
-                primary_image_url: await getSignedDownloadUrl(product?.primary_image_url),
+                primary_image_url: product?.primary_image_url ? await getSignedDownloadUrl(product?.primary_image_url) : null,
             };
         }));
         return res.status(HTTP_STATUS.OK).json({
@@ -170,7 +170,7 @@ export const getCollectionDetails = async (req, res) => {
             message: RESPONSE_MESSAGES.COLLECTION.FETCH_SUCCESS,
             data: {
                 ...collection.toJSON(),
-                collection_image: await getSignedDownloadUrl(collection.getDataValue("collection_image")),
+                collection_image: collection.getDataValue("collection_image") ? await getSignedDownloadUrl(collection.getDataValue("collection_image")) : null,
                 products: {
                     total_products: customizedProducts.length,
                     total_products_worth: +customizedProducts.reduce((acc, product) => parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
@@ -237,7 +237,7 @@ export const getCollectionProducts = async (req, res) => {
             }
             return {
                 ...productJSON,
-                primary_image_url: await getSignedDownloadUrl(product?.primary_image_url),
+                primary_image_url: product?.primary_image_url ? await getSignedDownloadUrl(product?.primary_image_url) : null,
             };
         }));
         return res.status(HTTP_STATUS.OK).json({
@@ -293,12 +293,12 @@ export const getUserCollections = async (req, res) => {
                 }
                 return {
                     ...productJSON,
-                    primary_image_url: await getSignedDownloadUrl(product?.primary_image_url),
+                    primary_image_url: product?.primary_image_url ? await getSignedDownloadUrl(product?.primary_image_url) : null,
                 };
             }));
             return {
                 ...collection.toJSON(),
-                collection_image: await getSignedDownloadUrl(collection.getDataValue('collection_image')),
+                collection_image: collection.getDataValue('collection_image') ? await getSignedDownloadUrl(collection.getDataValue('collection_image')) : null,
                 products: {
                     total_products: customizedProducts.length,
                     total_products_worth: +customizedProducts.reduce((acc, product) => parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
@@ -362,7 +362,7 @@ export const getProductCollections = async (req, res) => {
             data: await Promise.all(collections.map(async (collection) => {
                 return {
                     ...collection.toJSON(),
-                    collection_image: await getSignedDownloadUrl(collection.getDataValue('collection_image')),
+                    collection_image: collection.getDataValue('collection_image') ? await getSignedDownloadUrl(collection.getDataValue('collection_image')) : null,
                 };
             })),
             status: HTTP_STATUS.OK,

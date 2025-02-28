@@ -78,12 +78,10 @@ export const createCollection = async (
       });
     }
 
-    if (!collection_name || !description) {
+    if (!collection_name) {
       console.log(
         "Missing Fields - collection_name:",
         collection_name,
-        "description:",
-        description
       );
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         type: RESPONSE_TYPES.ERROR,
@@ -219,7 +217,7 @@ export const getCollectionDetails = async (
       }
       return {
         ...productJSON,
-        primary_image_url: await getSignedDownloadUrl(product?.primary_image_url!),
+        primary_image_url: product?.primary_image_url ? await getSignedDownloadUrl(product?.primary_image_url!) : null,
       };
     }));
 
@@ -228,7 +226,7 @@ export const getCollectionDetails = async (
       message: RESPONSE_MESSAGES.COLLECTION.FETCH_SUCCESS,
       data: {
         ...collection.toJSON(),
-        collection_image: await getSignedDownloadUrl(collection.getDataValue("collection_image")!),
+        collection_image: collection.getDataValue("collection_image") ? await getSignedDownloadUrl(collection.getDataValue("collection_image")!): null,
         products: {
           total_products: customizedProducts.length,
           total_products_worth: +customizedProducts.reduce((acc: any, product: any) => parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
@@ -306,7 +304,7 @@ export const getCollectionProducts = async (
       }
       return {
         ...productJSON,
-        primary_image_url: await getSignedDownloadUrl(product?.primary_image_url!),
+        primary_image_url: product?.primary_image_url ? await getSignedDownloadUrl(product?.primary_image_url!) : null,
       };
     }));
 
@@ -371,13 +369,13 @@ export const getUserCollections = async (
           }
           return {
             ...productJSON,
-            primary_image_url: await getSignedDownloadUrl(product?.primary_image_url!),
+            primary_image_url: product?.primary_image_url ? await getSignedDownloadUrl(product?.primary_image_url!) : null,
           };
         }));
 
         return {
           ...collection.toJSON(),
-          collection_image: await getSignedDownloadUrl(collection.getDataValue('collection_image')!),
+          collection_image: collection.getDataValue('collection_image') ? await getSignedDownloadUrl(collection.getDataValue('collection_image')!): null,
           products: {
             total_products: customizedProducts.length,
             total_products_worth: +customizedProducts.reduce((acc: any, product: any) => parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
@@ -450,7 +448,7 @@ export const getProductCollections = async (req: any, res: Response) => {
       data: await Promise.all(collections.map(async(collection)=>{
         return {
           ...collection.toJSON(),
-          collection_image: await getSignedDownloadUrl(collection.getDataValue('collection_image')!),
+          collection_image: collection.getDataValue('collection_image') ? await getSignedDownloadUrl(collection.getDataValue('collection_image')!) : null,
         };
       })),
       status: HTTP_STATUS.OK,

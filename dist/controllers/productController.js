@@ -9,22 +9,27 @@ export const createProduct = async (req, res) => {
         const { product_name, description, price, space_id } = req.body;
         const image = req.file;
         let { collection_id } = req.body;
-        if (!product_name || !price || !space_id) {
+        console.log("Request body:", req.body);
+        console.log("Request file:", req.file);
+        console.log("coming in here?");
+        if (!product_name || !image) {
+            console.log("Missing fields:", { product_name, image });
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 type: RESPONSE_TYPES.ERROR,
                 message: RESPONSE_MESSAGES.GENERIC.MISSING_FIELDS,
                 status: HTTP_STATUS.BAD_REQUEST,
             });
         }
-        console.log("Product place");
         // Check if space exists
-        const space = await Space.findByPk(space_id);
-        if (!space) {
-            return res.status(HTTP_STATUS.NOT_FOUND).json({
-                type: RESPONSE_TYPES.ERROR,
-                message: RESPONSE_MESSAGES.SPACE.NOT_FOUND,
-                status: HTTP_STATUS.NOT_FOUND,
-            });
+        if (space_id) {
+            const space = await Space.findByPk(space_id);
+            if (!space) {
+                return res.status(HTTP_STATUS.NOT_FOUND).json({
+                    type: RESPONSE_TYPES.ERROR,
+                    message: RESPONSE_MESSAGES.SPACE.NOT_FOUND,
+                    status: HTTP_STATUS.NOT_FOUND,
+                });
+            }
         }
         // Convert collection_id to an array of numbers if it exists
         if (collection_id) {
@@ -96,6 +101,7 @@ export const getAllProducts = async (_req, res) => {
                 "donation_status", // Include donation status in the response
             ],
         });
+        console.log("Products", products);
         // Customize the JSON response
         const customizedProducts = await Promise.all(products.map(async (product) => {
             const productJSON = product.toJSON();
@@ -104,9 +110,10 @@ export const getAllProducts = async (_req, res) => {
             }
             return {
                 ...productJSON,
-                primary_image_url: await getSignedDownloadUrl(product?.primary_image_url),
+                primary_image_url: product?.primary_image_url ? await getSignedDownloadUrl(product?.primary_image_url) : null,
             };
         }));
+        console.log("Customized Products", customizedProducts);
         return res.status(HTTP_STATUS.OK).json({
             type: RESPONSE_TYPES.SUCCESS,
             message: RESPONSE_MESSAGES.GENERIC.FETCH_SUCCESS,
@@ -164,7 +171,7 @@ export const getProductById = async (req, res) => {
                 ...productJSON,
                 collection_names: collection.map((item) => item.getDataValue("collection_name")),
                 space_name: space?.getDataValue("space_name"),
-                primary_image_url: await getSignedDownloadUrl(product?.primary_image_url),
+                primary_image_url: product?.primary_image_url ? await getSignedDownloadUrl(product?.primary_image_url) : null,
             },
             status: HTTP_STATUS.OK,
         });

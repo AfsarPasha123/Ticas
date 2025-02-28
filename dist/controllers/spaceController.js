@@ -33,8 +33,8 @@ export const createSpace = async (req, res) => {
         const space_name = req.body.space_name;
         const description = req.body.description;
         const space_image = req.file;
-        if (!space_name || !description) {
-            console.log("Missing Fields - space_name:", space_name, "description:", description);
+        if (!space_name) {
+            console.log("Missing Fields - space_name:", space_name);
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 status: RESPONSE_TYPES.ERROR,
                 message: RESPONSE_MESSAGES.GENERIC.MISSING_FIELDS,
@@ -135,7 +135,7 @@ export const getSpaceById = async (req, res) => {
             }
             return {
                 ...productJSON,
-                primary_image_url: await getSignedDownloadUrl(product?.primary_image_url),
+                primary_image_url: product?.primary_image_url ? await getSignedDownloadUrl(product?.primary_image_url) : null,
             };
         }));
         return res.status(HTTP_STATUS.OK).json({
@@ -143,7 +143,7 @@ export const getSpaceById = async (req, res) => {
             message: RESPONSE_MESSAGES.SPACE.FETCH_SUCCESS,
             data: {
                 ...space.toJSON(),
-                space_image: await getSignedDownloadUrl(space.getDataValue('space_image')),
+                space_image: space.getDataValue('space_image') ? await getSignedDownloadUrl(space.getDataValue('space_image')) : null,
                 products: {
                     total_products: customizedProducts.length,
                     total_products_worth: +customizedProducts.reduce((acc, product) => parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
@@ -175,7 +175,7 @@ export const getUserSpaces = async (req, res) => {
         const signedUrls = await Promise.all(spaces.map(async (item) => {
             const spaceImage = item.getDataValue('space_image');
             if (spaceImage) {
-                const signedUrl = await getSignedDownloadUrl(spaceImage);
+                const signedUrl = spaceImage ? await getSignedDownloadUrl(spaceImage) : null;
                 console.log(`Signed URL for ${spaceImage}: ${signedUrl}`);
                 return signedUrl;
             }
@@ -250,7 +250,7 @@ export const getSpaceProducts = async (req, res) => {
             }
             return {
                 ...productJSON,
-                primary_image_url: await getSignedDownloadUrl(product?.primary_image_url),
+                primary_image_url: product?.primary_image_url ? await getSignedDownloadUrl(product?.primary_image_url) : null,
             };
         }));
         return res.status(HTTP_STATUS.OK).json({

@@ -3,9 +3,9 @@ import { DataTypes, Model, ModelStatic, Sequelize } from 'sequelize';
 interface ProductAttributes {
     product_id?: number;
     product_name: string;
-    description: string;
-    primary_image_url?: string;
-    price: number;
+    description?: string;
+    primary_image_url: string;
+    price?: number;
     owner_id: number;
     space_id?: number;
     collection_ids?: number[];
@@ -31,17 +31,18 @@ export const Product = (sequelize: Sequelize, DataTypes: any) => {
             },
             description: {
                 type: DataTypes.TEXT,
-                allowNull: false,
+                allowNull: true,
                 defaultValue: '',
             },
             primary_image_url: {
                 type: DataTypes.STRING,
-                allowNull: true,
+                allowNull: false,
                 defaultValue: '',
             },
             price: {
                 type: DataTypes.DECIMAL(10, 2),
-                allowNull: false,
+                allowNull: true,
+                defaultValue: 0.00,
             },
             owner_id: {
                 type: DataTypes.INTEGER,
@@ -50,6 +51,7 @@ export const Product = (sequelize: Sequelize, DataTypes: any) => {
             space_id: {
                 type: DataTypes.INTEGER,
                 allowNull: true,
+                defaultValue: null,
             },
             collection_ids: {
                 type: DataTypes.JSON,
