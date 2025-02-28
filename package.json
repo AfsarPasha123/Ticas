@@ -19,6 +19,7 @@
     "db:init:test": "cross-env NODE_ENV=test ts-node-esm src/database/initDb.ts",
     "db:init:prod": "cross-env NODE_ENV=production ts-node-esm src/database/initDb.ts",
     "db:reinit": "cross-env NODE_ENV=development ts-node-esm src/database/reinitDb.ts",
+    "migration:generate": "node generate-migration.js",
     "migrate:dev": "cross-env NODE_ENV=development npx sequelize-cli db:migrate",
     "migrate:prod": "cross-env NODE_ENV=production npx sequelize-cli db:migrate",
     "sequelize:init": "npx sequelize-cli init"
