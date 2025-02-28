@@ -1,7 +1,6 @@
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import path from 'path';
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -35,6 +34,17 @@ export interface Config {
     };
 }
 
+// Log environment variables for debugging
+console.log('Environment:', environment);
+console.log('DB_HOST:', process.env.DB_HOST);
+console.log('DB_USER:', process.env.DB_USER);
+console.log('DB_PASSWORD:', process.env.DB_PASSWORD);
+console.log('DB_NAME:', process.env.DB_NAME);
+console.log('JWT_SECRET:', process.env.JWT_SECRET);
+console.log('AWS_ACCESS_KEY_ID:', process.env.AWS_ACCESS_KEY_ID);
+console.log('AWS_SECRET_ACCESS_KEY:', process.env.AWS_SECRET_ACCESS_KEY);
+console.log('AWS_REGION:', process.env.AWS_REGION);
+console.log('AWS_BUCKET_NAME:', process.env.AWS_BUCKET_NAME);
 
 function validateConfig() {
     const requiredEnvVars = [
@@ -58,17 +68,7 @@ function validateConfig() {
 // Validate environment variables
 validateConfig();
 
-// Log environment variables for debugging
-console.log('Environment:', environment);
-console.log('DB_HOST:', process.env.DB_HOST);
-console.log('DB_USER:', process.env.DB_USER);
-console.log('DB_PASSWORD:', process.env.DB_PASSWORD);
-console.log('DB_NAME:', process.env.DB_NAME);
-console.log('JWT_SECRET:', process.env.JWT_SECRET);
-console.log('AWS_ACCESS_KEY_ID:', process.env.AWS_ACCESS_KEY_ID);
-console.log('AWS_SECRET_ACCESS_KEY:', process.env.AWS_SECRET_ACCESS_KEY);
-console.log('AWS_REGION:', process.env.AWS_REGION);
-console.log('AWS_BUCKET_NAME:', process.env.AWS_BUCKET_NAME);
+
 
 const config: Config = {
     env: environment,
