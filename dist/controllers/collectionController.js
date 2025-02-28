@@ -145,16 +145,35 @@ export const getCollectionDetails = async (req, res) => {
                 owner_id: owner_id,
                 [Op.and]: sequelize.literal(`JSON_CONTAINS(collection_ids, '${collection_id}')`)
             },
+            attributes: [
+                "product_id",
+                "product_name",
+                "description",
+                "price",
+                "primary_image_url",
+                "donation_status", // Include donation status in the response
+            ],
         });
+        // Customize the JSON response
+        const customizedProducts = await Promise.all(getProducts.map(async (product) => {
+            const productJSON = product.toJSON();
+            if (!productJSON.donation_status) {
+                delete productJSON.donation_status;
+            }
+            return {
+                ...productJSON,
+                primary_image_url: await getSignedDownloadUrl(product?.primary_image_url),
+            };
+        }));
         return res.status(HTTP_STATUS.OK).json({
             type: RESPONSE_TYPES.SUCCESS,
             message: RESPONSE_MESSAGES.COLLECTION.FETCH_SUCCESS,
             data: {
                 ...collection.toJSON(),
-                collection_image: await getSignedDownloadUrl(collection.getDataValue("collection_name")),
+                collection_image: await getSignedDownloadUrl(collection.getDataValue("collection_image")),
                 products: {
-                    total_products: getProducts.length,
-                    total_products_worth: +getProducts.reduce((acc, product) => parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
+                    total_products: customizedProducts.length,
+                    total_products_worth: +customizedProducts.reduce((acc, product) => parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
                     total_categories: 0, // TODO : Add total categories later
                 },
             },
@@ -201,16 +220,30 @@ export const getCollectionProducts = async (req, res) => {
         }
         const products = await Product.findAll({
             where: sequelize.literal(`JSON_CONTAINS(collection_ids, '${collection_id}')`),
+            attributes: [
+                "product_id",
+                "product_name",
+                "description",
+                "price",
+                "primary_image_url",
+                "donation_status", // Include donation status in the response
+            ],
         });
+        // Customize the JSON response
+        const customizedProducts = await Promise.all(products.map(async (product) => {
+            const productJSON = product.toJSON();
+            if (!productJSON.donation_status) {
+                delete productJSON.donation_status;
+            }
+            return {
+                ...productJSON,
+                primary_image_url: await getSignedDownloadUrl(product?.primary_image_url),
+            };
+        }));
         return res.status(HTTP_STATUS.OK).json({
             type: RESPONSE_TYPES.SUCCESS,
             message: RESPONSE_MESSAGES.COLLECTION.FETCH_SUCCESS,
-            data: await Promise.all(products.map(async (product) => {
-                return {
-                    ...product.toJSON(),
-                    primary_image_url: await getSignedDownloadUrl(product.primary_image_url),
-                };
-            })),
+            data: customizedProducts, // Use customized products
             status: HTTP_STATUS.OK,
         });
     }
@@ -243,13 +276,32 @@ export const getUserCollections = async (req, res) => {
                     owner_id: owner_id,
                     [Op.and]: sequelize.literal(`JSON_CONTAINS(collection_ids, '${collection.getDataValue("collection_id")}')`)
                 },
+                attributes: [
+                    "product_id",
+                    "product_name",
+                    "description",
+                    "price",
+                    "primary_image_url",
+                    "donation_status", // Include donation status in the response
+                ],
             });
+            // Customize the JSON response
+            const customizedProducts = await Promise.all(getProducts.map(async (product) => {
+                const productJSON = product.toJSON();
+                if (!productJSON.donation_status) {
+                    delete productJSON.donation_status;
+                }
+                return {
+                    ...productJSON,
+                    primary_image_url: await getSignedDownloadUrl(product?.primary_image_url),
+                };
+            }));
             return {
                 ...collection.toJSON(),
                 collection_image: await getSignedDownloadUrl(collection.getDataValue('collection_image')),
                 products: {
-                    total_products: getProducts.length,
-                    total_products_worth: +getProducts.reduce((acc, product) => parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
+                    total_products: customizedProducts.length,
+                    total_products_worth: +customizedProducts.reduce((acc, product) => parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
                 },
             };
         }));

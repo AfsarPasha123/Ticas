@@ -14,9 +14,9 @@ import rateLimit from "express-rate-limit";
 import searchRoutes from "./routes/searchRoutes.js";
 // Import database
 import { sequelize } from "./models/index.js";
-import serpApiSearchRouter from "./controllers/searchProductSerpApi.js";
 // Import routes
 import spaceRoutes from "./routes/spaceRoutes.js";
+import donationRoutes from "./routes/donationRoutes.js"; // Import the donation routes
 // Robust Environment Configuration
 function loadEnvironmentConfig() {
     const __filename = fileURLToPath(import.meta.url);
@@ -150,7 +150,8 @@ app.use("/collections", collectionRoutes);
 app.use("/auth", authRoutes);
 app.use("/profile", profileRoutes);
 app.use("/search", searchRoutes);
-app.use("/search-product", serpApiSearchRouter);
+// Add donation routes
+app.use("/donations", donationRoutes); // Add the donation routes here
 // Centralized route logging
 app._router.stack.forEach((middleware) => {
     if (middleware.route) {

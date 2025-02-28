@@ -118,7 +118,26 @@ export const getSpaceById = async (req, res) => {
         }
         const getProducts = await Product.findAll({
             where: { space_id: id, owner_id: userId },
+            attributes: [
+                "product_id",
+                "product_name",
+                "description",
+                "price",
+                "primary_image_url",
+                "donation_status", // Include donation status in the response
+            ],
         });
+        // Customize the JSON response
+        const customizedProducts = await Promise.all(getProducts.map(async (product) => {
+            const productJSON = product.toJSON();
+            if (!productJSON.donation_status) {
+                delete productJSON.donation_status;
+            }
+            return {
+                ...productJSON,
+                primary_image_url: await getSignedDownloadUrl(product?.primary_image_url),
+            };
+        }));
         return res.status(HTTP_STATUS.OK).json({
             status: RESPONSE_TYPES.SUCCESS,
             message: RESPONSE_MESSAGES.SPACE.FETCH_SUCCESS,
@@ -126,8 +145,8 @@ export const getSpaceById = async (req, res) => {
                 ...space.toJSON(),
                 space_image: await getSignedDownloadUrl(space.getDataValue('space_image')),
                 products: {
-                    total_products: getProducts.length,
-                    total_products_worth: +getProducts.reduce((acc, product) => parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
+                    total_products: customizedProducts.length,
+                    total_products_worth: +customizedProducts.reduce((acc, product) => parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
                     total_categories: 0, // TODO : Add total categories later
                 },
             },
@@ -214,16 +233,30 @@ export const getSpaceProducts = async (req, res) => {
         }
         const products = await Product.findAll({
             where: { space_id: space_id, owner_id: userId },
+            attributes: [
+                "product_id",
+                "product_name",
+                "description",
+                "price",
+                "primary_image_url",
+                "donation_status", // Include donation status in the response
+            ],
         });
+        // Customize the JSON response
+        const customizedProducts = await Promise.all(products.map(async (product) => {
+            const productJSON = product.toJSON();
+            if (!productJSON.donation_status) {
+                delete productJSON.donation_status;
+            }
+            return {
+                ...productJSON,
+                primary_image_url: await getSignedDownloadUrl(product?.primary_image_url),
+            };
+        }));
         return res.status(HTTP_STATUS.OK).json({
             status: RESPONSE_TYPES.SUCCESS,
             message: RESPONSE_MESSAGES.GENERIC.FETCH_SUCCESS,
-            data: await Promise.all(products.map(async (product) => {
-                return {
-                    ...product.toJSON(),
-                    primary_image_url: await getSignedDownloadUrl(product?.primary_image_url),
-                };
-            }))
+            data: customizedProducts, // Use customized products
         });
     }
     catch (error) {

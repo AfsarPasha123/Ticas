@@ -10,6 +10,7 @@ interface ProductAttributes {
     collection_ids?: number[];
     created_at?: Date;
     updated_at?: Date;
+    donation_status?: 'in_donation' | 'donated' | null;
 }
 interface ProductModel extends Model<ProductAttributes>, ProductAttributes {
 }
