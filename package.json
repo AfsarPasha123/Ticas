@@ -52,6 +52,7 @@
     "cross-env": "^7.0.3",
     "mocha": "^10.2.0",
     "nodemon": "^3.0.3",
+    "sequelize-cli": "^6.6.2",
     "sinon": "^15.2.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
