@@ -9,6 +9,7 @@ import express, { NextFunction, Request, Response } from "express";
 import authRoutes from "./routes/authRoutes.js";
 import collectionRoutes from "./routes/collectionRoutes.js";
 import cors from "cors";
+import donationRoutes from "./routes/donationRoutes.js"; // Import the donation routes
 import { fileURLToPath } from "url";
 import productRoutes from "./routes/productRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
@@ -16,10 +17,9 @@ import rateLimit from "express-rate-limit";
 import searchRoutes from "./routes/searchRoutes.js";
 // Import database
 import { sequelize } from "./models/index.js";
+import serpApiSearchRouter from "./controllers/searchProductSerpApi.js";
 // Import routes
 import spaceRoutes from "./routes/spaceRoutes.js";
-import donationRoutes from "./routes/donationRoutes.js"; // Import the donation routes
-import serpApiSearchRouter from "./controllers/searchProductSerpApi.js";
 
 // Robust Environment Configuration
 function loadEnvironmentConfig() {
@@ -30,6 +30,8 @@ function loadEnvironmentConfig() {
   const nodeEnv = process.env.NODE_ENV || "production";
   const envFile = `.env.${nodeEnv}`;
   const envPath = path.resolve(__dirname, `../${envFile}`);
+
+  console.log("envPath", envPath)
 
   // Validate environment file exists
   if (!fs.existsSync(envPath)) {

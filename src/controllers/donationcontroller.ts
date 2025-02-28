@@ -1,6 +1,17 @@
-import { Request, Response } from 'express';
-import { Product } from '../models/index.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES, RESPONSE_TYPES } from '../constants/responseConstants.js';
+import { Request, Response } from 'express';
+
+import { Product } from '../models/index.js';
+
+declare module 'express' {
+    export interface Request {
+        user?: {
+            user_id: number;
+            email: string;
+            username?: string;
+        };
+    }
+}
 
 export const moveToDonation = async (req: Request, res: Response): Promise<Response> => {
     const { productIds }: { productIds: number[] } = req.body; // Expecting an array of product IDs
