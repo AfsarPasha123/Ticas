@@ -128,7 +128,13 @@ export const getAllProducts = async (
       ],
     });
 
-    console.log("Products", products)
+    console.log("Products", products);
+
+    // Calculate the total worth of all products
+    const totalWorth = products.reduce((acc, product) => acc + parseFloat(product.price?.toString() || '0'), 0);
+
+    // Calculate the total product count
+    const totalCount = products.length;
 
     // Customize the JSON response
     const customizedProducts = await Promise.all(products.map(async (product) => {
@@ -138,16 +144,20 @@ export const getAllProducts = async (
       }
       return {
         ...productJSON,
-        primary_image_url: product?.primary_image_url ? await getSignedDownloadUrl(product?.primary_image_url!): null,
+        primary_image_url: product?.primary_image_url ? await getSignedDownloadUrl(product?.primary_image_url!) : null,
       };
     }));
 
-    console.log("Customized Products", customizedProducts)
+    console.log("Customized Products", customizedProducts);
 
     return res.status(HTTP_STATUS.OK).json({
       type: RESPONSE_TYPES.SUCCESS,
       message: RESPONSE_MESSAGES.GENERIC.FETCH_SUCCESS,
-      data: customizedProducts, // Use customized products
+      data: {
+        products: customizedProducts, // Use customized products
+        totalWorth: totalWorth.toFixed(2), // Include total worth in the response
+        totalCount: totalCount, // Include total product count in the response
+      },
       status: HTTP_STATUS.OK,
     });
   } catch (error) {
