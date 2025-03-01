@@ -62,15 +62,16 @@ export const createSpace = async (
     const description = req.body.description;
     const space_image = req.file;
 
-    if (!space_name ) {
+    if (!space_name) {
       console.log(
         "Missing Fields - space_name:",
         space_name,
       );
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        status: RESPONSE_TYPES.ERROR,
+        status: HTTP_STATUS.BAD_REQUEST,
+        type: RESPONSE_TYPES.ERROR,
         message: RESPONSE_MESSAGES.GENERIC.MISSING_FIELDS,
-        details: { space_name, description },
+        details: { space_name: "Space name is required" },
       });
     }
 

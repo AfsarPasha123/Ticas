@@ -85,24 +85,30 @@ app.use(express.json({
     },
 }));
 // Global request logging middleware with enhanced diagnostics
-app.use((_req, _res, next) => {
+app.use((req, res, next) => {
     const startTime = Date.now();
     // Log request details
     console.log("==================== GLOBAL REQUEST DEBUG ====================");
     console.log("Timestamp:", new Date().toISOString());
-    console.log("Method:", _req.method);
-    console.log("Path:", _req.path);
-    console.log("Headers:", _req.headers);
-    console.log("Body:", _req.body);
+    console.log("Method:", req.method);
+    console.log("Path:", req.path);
+    console.log("Headers:", req.headers);
+    // Don't log body for multipart/form-data requests
+    if (req.headers['content-type'] && !req.headers['content-type'].includes('multipart/form-data')) {
+        console.log("Body:", req.body);
+    }
+    else {
+        console.log("Body: [Multipart form data - not logged]");
+    }
     // Track response time
-    const oldWrite = _res.write;
-    const oldEnd = _res.end;
+    const oldWrite = res.write;
+    const oldEnd = res.end;
     const chunks = [];
-    _res.write = function (chunk) {
+    res.write = function (chunk) {
         chunks.push(Buffer.from(chunk));
-        return oldWrite.apply(_res, arguments);
+        return oldWrite.apply(res, arguments);
     };
-    _res.end = function (chunk) {
+    res.end = function (chunk) {
         if (chunk) {
             chunks.push(Buffer.from(chunk));
         }
@@ -111,7 +117,7 @@ app.use((_req, _res, next) => {
         console.log("Response Time:", responseTime + "ms");
         console.log("Response Body:", responseBody);
         console.log("================================================================");
-        oldEnd.apply(_res, arguments);
+        oldEnd.apply(res, arguments);
     };
     next();
 });

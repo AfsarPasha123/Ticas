@@ -59,6 +59,7 @@ export declare const RESPONSE_MESSAGES: {
         readonly FETCH_SUCCESS: "Resources retrieved successfully.";
         readonly SEARCH_SUCCESS: "Search results fetched successfully.";
         readonly QUERY_REQUIRED: "Search query is required.";
+        readonly REQUEST_BODY_MISSING: "Invalid request: Request body is missing or empty.";
     };
 };
 export declare const RESPONSE_TYPES: {

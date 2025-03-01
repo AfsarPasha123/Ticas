@@ -125,6 +125,7 @@ export const getAllProducts = async (
         "price",
         "primary_image_url",
         "donation_status", // Include donation status in the response
+        "space_id",
       ],
     });
 
@@ -136,8 +137,24 @@ export const getAllProducts = async (
     // Calculate the total product count
     const totalCount = products.length;
 
+    const total_spaces = await Space.count({
+      where: { owner_id },
+    })
+
+    const total_collections = await Collection.count({
+      where: {owner_id},
+    });
+
     // Customize the JSON response
     const customizedProducts = await Promise.all(products.map(async (product) => {
+      let product_space = null;
+      if (product.toJSON().space_id) {
+        product_space = await Space.findOne({
+          where: { owner_id, space_id: product.toJSON().space_id },
+          attributes: ["space_name"],
+        })
+      }
+      
       const productJSON = product.toJSON();
       if (!productJSON.donation_status) {
         delete productJSON.donation_status;
@@ -145,6 +162,7 @@ export const getAllProducts = async (
       return {
         ...productJSON,
         primary_image_url: product?.primary_image_url ? await getSignedDownloadUrl(product?.primary_image_url!) : null,
+        product_space: product_space ? product_space?.getDataValue("space_name") : null,
       };
     }));
 
@@ -157,6 +175,8 @@ export const getAllProducts = async (
         products: customizedProducts, // Use customized products
         totalWorth: totalWorth.toFixed(2), // Include total worth in the response
         totalCount: totalCount, // Include total product count in the response
+        total_spaces,
+        total_collections,
       },
       status: HTTP_STATUS.OK,
     });

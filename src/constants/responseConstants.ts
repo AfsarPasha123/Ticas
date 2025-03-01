@@ -69,6 +69,7 @@ export const RESPONSE_MESSAGES = {
         FETCH_SUCCESS: 'Resources retrieved successfully.',
         SEARCH_SUCCESS: 'Search results fetched successfully.',
         QUERY_REQUIRED: 'Search query is required.',
+        REQUEST_BODY_MISSING: "Invalid request: Request body is missing or empty.",
     }
 } as const;
 
