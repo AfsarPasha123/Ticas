@@ -2,7 +2,7 @@ import { Model, Optional, Sequelize } from 'sequelize';
 interface CollectionAttributes {
     collection_id: number;
     collection_name: string;
-    description?: string;
+    description?: string | null;
     collection_image?: string | null;
     owner_id: number;
     last_updated?: Date;
