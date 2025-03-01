@@ -36,7 +36,7 @@ export const createCollection = async (req, res) => {
         console.log("Request File:", req.file);
         const { collection_name, description } = req.body;
         const owner_id = req.user?.user_id;
-        const collection_image = req.file;
+        const collection_image = req?.file;
         if (!owner_id) {
             return res.status(HTTP_STATUS.UNAUTHORIZED).json({
                 type: RESPONSE_TYPES.ERROR,
@@ -50,6 +50,7 @@ export const createCollection = async (req, res) => {
                 type: RESPONSE_TYPES.ERROR,
                 message: RESPONSE_MESSAGES.GENERIC.MISSING_FIELDS,
                 status: HTTP_STATUS.BAD_REQUEST,
+                details: { collection_name: "Collection name is required" },
             });
         }
         // Upload image to S3 if provided

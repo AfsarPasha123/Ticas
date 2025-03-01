@@ -100,29 +100,36 @@ app.use(
 );
 
 // Global request logging middleware with enhanced diagnostics
-app.use((_req: Request, _res: Response, next: NextFunction) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   const startTime = Date.now();
 
   // Log request details
   console.log("==================== GLOBAL REQUEST DEBUG ====================");
   console.log("Timestamp:", new Date().toISOString());
-  console.log("Method:", _req.method);
-  console.log("Path:", _req.path);
-  console.log("Headers:", _req.headers);
-  console.log("Body:", _req.body);
+  console.log("Method:", req.method);
+  console.log("Path:", req.path);
+  console.log("Headers:", req.headers);
+
+   // Don't log body for multipart/form-data requests
+   if (req.headers['content-type'] && !req.headers['content-type'].includes('multipart/form-data')) {
+    console.log("Body:", req.body);
+  } else {
+    console.log("Body: [Multipart form data - not logged]");
+  }
+
 
   // Track response time
-  const oldWrite = _res.write;
-  const oldEnd = _res.end;
+  const oldWrite = res.write;
+  const oldEnd = res.end;
 
   const chunks: Buffer[] = [];
 
-  _res.write = function (chunk: any): boolean {
+  res.write = function (chunk: any): boolean {
     chunks.push(Buffer.from(chunk));
-    return oldWrite.apply(_res, arguments as any);
+    return oldWrite.apply(res, arguments as any);
   };
 
-  _res.end = function (chunk: any): any {
+  res.end = function (chunk: any): any {
     if (chunk) {
       chunks.push(Buffer.from(chunk));
     }
@@ -135,7 +142,7 @@ app.use((_req: Request, _res: Response, next: NextFunction) => {
       "================================================================"
     );
 
-    oldEnd.apply(_res, arguments as any);
+    oldEnd.apply(res, arguments as any);
   };
 
   next();
