@@ -6,7 +6,7 @@ interface ProductAttributes {
     primary_image_url: string;
     price?: number;
     owner_id: number;
-    space_id?: number;
+    space_id?: number | null;
     collection_ids?: number[];
     created_at?: Date;
     updated_at?: Date;

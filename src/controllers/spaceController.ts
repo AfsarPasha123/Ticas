@@ -86,7 +86,7 @@ export const createSpace = async (
     }
 
     // Upload image to S3 if provided
-    let key: string | null = ""
+    let key: string | null = null;
     if (space_image) {
           const fileExtension = path.extname(space_image.originalname);
           key = `spaces/${userId}/${Date.now()}${fileExtension}`;
@@ -98,13 +98,16 @@ export const createSpace = async (
       space_name,
       description,
       owner_id: userId,
-      space_image: key,
+      space_image: key || undefined,
     };
 
     const newSpace = await Space.create(spaceData);
-    spaceCreated = true;
+spaceCreated = true;
 
-    const createdSpace = await Space.findByPk(newSpace.space_id);
+if (!newSpace.space_id) {
+  throw new Error("Space was created but no ID was generated");
+}
+const createdSpace = await Space.findByPk(newSpace.space_id);
     if (!createdSpace) {
       throw new Error("Space was created but could not be retrieved");
     }

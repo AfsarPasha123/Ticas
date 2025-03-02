@@ -4,14 +4,15 @@ import { DataTypes, Model, Optional, Sequelize } from 'sequelize';
 interface CollectionAttributes {
   collection_id: number;
   collection_name: string;
-  description?: string |null;
+  description?: string | null;
   collection_image?: string | null;
   owner_id: number;
   last_updated?: Date;
 }
 
 // Interface for Collection creation
-interface CollectionCreationAttributes extends Optional<CollectionAttributes, 'collection_id' | 'description' | 'collection_image' | 'last_updated'> {}
+interface CollectionCreationAttributes extends Optional<CollectionAttributes, 
+  'collection_id' | 'description' | 'collection_image' | 'last_updated'> {}
 
 // Define the Collection model
 class Collection extends Model<CollectionAttributes, CollectionCreationAttributes> implements CollectionAttributes {

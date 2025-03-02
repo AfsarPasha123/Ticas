@@ -5,9 +5,9 @@ export class Space extends Model {
     description;
     space_image;
     owner_id;
+    products; // Add products array
     created_at;
     updated_at;
-    // Add any additional methods here
     static associate(models) {
         Space.belongsTo(models.User, {
             foreignKey: 'owner_id',

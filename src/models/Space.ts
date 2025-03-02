@@ -1,15 +1,15 @@
 import { DataTypes, Model, Sequelize } from 'sequelize';
 
 export class Space extends Model {
-  public space_id!: number;
+  public space_id!: number | null;
   public space_name!: string;
   public description!: string | null;
   public space_image!: string | null;
   public owner_id!: number;
+  public products!: number[];  // Add products array
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
 
-  // Add any additional methods here
   public static associate(models: any) {
     Space.belongsTo(models.User, {
       foreignKey: 'owner_id',
@@ -21,7 +21,7 @@ export class Space extends Model {
 export const initSpaceModel = (sequelize: Sequelize) => {
   Space.init({
     space_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER,  
       autoIncrement: true,
       primaryKey: true,
       field: 'space_id'
