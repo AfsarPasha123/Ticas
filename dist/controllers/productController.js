@@ -1,6 +1,7 @@
 import { Collection, Product, Space } from "../models/index.js";
 import { HTTP_STATUS, RESPONSE_MESSAGES, RESPONSE_TYPES, } from "../constants/responseConstants.js";
 import { getSignedDownloadUrl, uploadToS3 } from "../services/s3Service.js";
+import { Sequelize } from 'sequelize';
 import { Op } from "sequelize";
 import path from "path";
 // Create a new product
@@ -210,7 +211,6 @@ export const getProductById = async (req, res) => {
         });
     }
 };
-// Update product
 export const updateProduct = async (req, res) => {
     try {
         const product_id = parseInt(req.params.id);
@@ -259,7 +259,8 @@ export const updateProduct = async (req, res) => {
                 }
             }
         }
-        if (space_id) {
+        // Check if the new space exists
+        if (space_id !== null && space_id !== "null" && space_id !== undefined) {
             const space = await Space.findByPk(space_id);
             if (!space) {
                 return res.status(HTTP_STATUS.NOT_FOUND).json({
@@ -269,13 +270,67 @@ export const updateProduct = async (req, res) => {
                 });
             }
         }
+        // Handle space updates
+        if (space_id === null || space_id === "null" || space_id === undefined) {
+            product.space_id = null;
+        }
+        else if (space_id !== product.space_id) {
+            // Remove product from the old space if it exists
+            if (product.space_id) {
+                try {
+                    await Space.update({ products: Sequelize.fn('array_remove', Sequelize.col('products'), product_id) }, { where: { space_id: product.space_id } });
+                }
+                catch (spaceError) {
+                    console.error("Error updating space:", spaceError);
+                }
+            }
+            product.space_id = space_id;
+        }
+        // Update product details
         await product.update({
             product_name: product_name || product.product_name,
             description: description || product.description,
             price: price || product.price,
-            space_id: parseInt(space_id) || product.space_id,
-            collection_ids: collection_id || product.collection_ids,
-            primary_image_url: key,
+            primary_image_url: key || product.primary_image_url,
+            space_id: space_id === "null" || space_id === null ? null : (space_id || product.space_id),
+            collection_ids: collection_id || product.collection_ids
+        });
+        // Handle collection updates
+        if (collection_id) {
+            // Normalize collection_id to array
+            if (!Array.isArray(collection_id)) {
+                collection_id = [collection_id];
+            }
+            collection_id = collection_id.map((id) => parseInt(id, 10));
+            // Validate all new collections exist
+            for (const id of collection_id) {
+                const collection = await Collection.findByPk(id);
+                if (!collection) {
+                    return res.status(HTTP_STATUS.NOT_FOUND).json({
+                        type: RESPONSE_TYPES.ERROR,
+                        message: RESPONSE_MESSAGES.COLLECTION.NOT_FOUND,
+                        status: HTTP_STATUS.NOT_FOUND,
+                    });
+                }
+            }
+            // Find collections to remove (in current but not in new)
+            const collectionsToRemove = (product.collection_ids || [])
+                .filter((id) => !collection_id.includes(id));
+            // Find collections to add (in new but not in current)
+            const collectionsToAdd = collection_id
+                .filter((id) => !(product.collection_ids || []).includes(id));
+            console.log(`Removing product from collections: ${collectionsToRemove}`);
+            console.log(`Adding product to collections: ${collectionsToAdd}`);
+        }
+        // Update product details
+        // Update product details
+        await product.update({
+            product_name: product_name || product.product_name,
+            description: description || product.description,
+            price: price || product.price,
+            primary_image_url: key || product.primary_image_url,
+            space_id: space_id === undefined ? product.space_id : space_id, // Fix this line
+            collection_ids: collection_id || product.collection_ids
         });
         return res.status(HTTP_STATUS.OK).json({
             type: RESPONSE_TYPES.SUCCESS,

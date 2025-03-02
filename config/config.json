@@ -1,7 +1,7 @@
 {
   "development": {
     "username": "root",
-    "password": "root",
+    "password": "user",
     "database": "TICASA",
     "host": "localhost",
     "dialect": "mysql"

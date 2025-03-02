@@ -6,8 +6,8 @@ import {
 } from "../constants/responseConstants.js";
 import { Request, Response } from "express";
 import { getSignedDownloadUrl, uploadToS3 } from "../services/s3Service.js";
-
-import { Op } from "sequelize"
+import { Sequelize } from 'sequelize';
+import { Op } from "sequelize";
 import path from "path";
 
 interface MulterRequest extends Request {
@@ -255,7 +255,6 @@ export const getProductById = async (
   }
 };
 
-// Update product
 export const updateProduct = async (
   req: MulterRequest,
   res: Response
@@ -275,7 +274,6 @@ export const updateProduct = async (
     }
 
     const product = await Product.findByPk(product_id);
-
     if (!product) {
       return res.status(HTTP_STATUS.NOT_FOUND).json({
         type: RESPONSE_TYPES.ERROR,
@@ -285,15 +283,15 @@ export const updateProduct = async (
     }
 
     let primary_image_url = product.primary_image_url || "";
-    let key = ""
+    let key = "";
     if (image) {
       const fileExtension = path.extname(image.originalname);
       key = `products/${Date.now()}${fileExtension}`;
       primary_image_url = await uploadToS3(image, key);
     }
 
-     // Convert collection_id to an array of numbers if it exists
-     if (collection_id) {
+    // Convert collection_id to an array of numbers if it exists
+    if (collection_id) {
       if (!Array.isArray(collection_id)) {
         collection_id = [collection_id];
       }
@@ -314,25 +312,88 @@ export const updateProduct = async (
       }
     }
 
-    if (space_id) {
-      const space = await Space.findByPk(space_id);
-      if (!space) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({
+// Check if the new space exists
+if (space_id !== null && space_id !== "null" && space_id !== undefined) {
+  const space = await Space.findByPk(space_id);
+  if (!space) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
           type: RESPONSE_TYPES.ERROR,
           message: RESPONSE_MESSAGES.SPACE.NOT_FOUND,
           status: HTTP_STATUS.NOT_FOUND,
-        });
+      });
+  }
+}
+
+// Handle space updates
+if (space_id === null || space_id === "null" || space_id === undefined) {
+  product.space_id = null;
+} else if (space_id !== product.space_id) {
+  // Remove product from the old space if it exists
+  if (product.space_id) {
+      try {
+          await Space.update(
+              { products: Sequelize.fn('array_remove', Sequelize.col('products'), product_id) },
+              { where: { space_id: product.space_id } }
+          );
+      } catch (spaceError) {
+          console.error("Error updating space:", spaceError);
       }
+  }
+  product.space_id = space_id;
+}
+
+// Update product details
+await product.update({
+  product_name: product_name || product.product_name,
+  description: description || product.description,
+  price: price || product.price,
+  primary_image_url: key || product.primary_image_url,
+  space_id: space_id === "null" || space_id === null ? null : (space_id || product.space_id),
+  collection_ids: collection_id || product.collection_ids
+});
+
+    // Handle collection updates
+    if (collection_id) {
+      // Normalize collection_id to array
+      if (!Array.isArray(collection_id)) {
+        collection_id = [collection_id];
+      }
+      collection_id = collection_id.map((id: any) => parseInt(id, 10));
+
+      // Validate all new collections exist
+      for (const id of collection_id) {
+        const collection = await Collection.findByPk(id);
+        if (!collection) {
+          return res.status(HTTP_STATUS.NOT_FOUND).json({
+            type: RESPONSE_TYPES.ERROR,
+            message: RESPONSE_MESSAGES.COLLECTION.NOT_FOUND,
+            status: HTTP_STATUS.NOT_FOUND,
+          });
+        }
+      }
+
+      // Find collections to remove (in current but not in new)
+      const collectionsToRemove = (product.collection_ids || [])
+        .filter((id: number) => !collection_id.includes(id));
+
+      // Find collections to add (in new but not in current)
+      const collectionsToAdd = collection_id
+        .filter((id: number) => !(product.collection_ids || []).includes(id));
+
+      console.log(`Removing product from collections: ${collectionsToRemove}`);
+      console.log(`Adding product to collections: ${collectionsToAdd}`);
     }
 
-    await product.update({
-      product_name: product_name || product.product_name,
-      description: description || product.description,
-      price: price || product.price,
-      space_id: parseInt(space_id) || product.space_id,
-      collection_ids: collection_id || product.collection_ids,
-      primary_image_url: key,
-    });
+    // Update product details
+    // Update product details
+  await product.update({
+    product_name: product_name || product.product_name,
+    description: description || product.description,
+    price: price || product.price,
+    primary_image_url: key || product.primary_image_url,
+    space_id: space_id === undefined ? product.space_id : space_id, // Fix this line
+    collection_ids: collection_id || product.collection_ids
+  });
 
     return res.status(HTTP_STATUS.OK).json({
       type: RESPONSE_TYPES.SUCCESS,
