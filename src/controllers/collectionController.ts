@@ -206,11 +206,16 @@ export const getCollectionDetails = async (
         "description",
         "price",
         "primary_image_url",
-        "donation_status", // Include donation status in the response
+        "donation_status",
       ],
     });
 
-    // Customize the JSON response
+    // Get collection image or use first product's image as fallback
+    let collectionImage = collection.getDataValue('collection_image');
+    if (!collectionImage && getProducts.length > 0) {
+      collectionImage = getProducts[0].primary_image_url;
+    }
+
     const customizedProducts = await Promise.all(getProducts.map(async (product) => {
       const productJSON = product.toJSON();
       if (!productJSON.donation_status) {
@@ -227,11 +232,11 @@ export const getCollectionDetails = async (
       message: RESPONSE_MESSAGES.COLLECTION.FETCH_SUCCESS,
       data: {
         ...collection.toJSON(),
-        collection_image: collection.getDataValue("collection_image") ? await getSignedDownloadUrl(collection.getDataValue("collection_image")!): null,
+        collection_image: collectionImage ? await getSignedDownloadUrl(collectionImage) : null,
         products: {
           total_products: customizedProducts.length,
           total_products_worth: +customizedProducts.reduce((acc: any, product: any) => parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
-          total_categories: 0,  // TODO : Add total categories later
+          total_categories: 0,
         },
       },
       status: HTTP_STATUS.OK,
@@ -464,3 +469,113 @@ export const getProductCollections = async (req: any, res: Response) => {
     });
   }
 }
+
+export const updateCollection = async (
+  req: CollectionRequest,
+  res: Response
+): Promise<Response> => {
+  let uploadedImageUrl: string | null = null;
+
+  try {
+    const collection_id = parseInt(req.params.id);
+    const owner_id = req.user?.user_id;
+    const { collection_name, description } = req.body;
+    const collection_image = req.file;
+
+    if (!owner_id) {
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+        type: RESPONSE_TYPES.ERROR,
+        message: RESPONSE_MESSAGES.AUTH.TOKEN_REQUIRED,
+        status: HTTP_STATUS.UNAUTHORIZED,
+      });
+    }
+
+    const collection = await Collection.findOne({
+      where: { collection_id, owner_id },
+    });
+
+    if (!collection) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        type: RESPONSE_TYPES.ERROR,
+        message: RESPONSE_MESSAGES.COLLECTION.NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND,
+      });
+    }
+
+    let key = collection.getDataValue('collection_image');
+    if (collection_image) {
+      // Delete old image if exists
+      if (key && key.startsWith('collections/')) {
+        try {
+          await deleteFromS3(key);
+        } catch (error) {
+          console.error("Error deleting old collection image:", error);
+        }
+      }
+      
+      // Upload new image
+      key = `collections/${owner_id}/${Date.now()}-${path.basename(collection_image.originalname)}`;
+      uploadedImageUrl = await uploadToS3(collection_image, key);
+    }
+
+    const updateData: any = {};
+    if (collection_name) updateData.collection_name = collection_name;
+    if (description !== undefined) updateData.description = description;
+    if (key) updateData.collection_image = key;
+
+    await collection.update(updateData);
+
+    // Get products in the collection
+    const products = await Product.findAll({
+      where: {
+        owner_id,
+        [Op.and]: sequelize.literal(`JSON_CONTAINS(collection_ids, '${collection_id}')`)
+      },
+      attributes: [
+        "product_id",
+        "product_name",
+        "description",
+        "price",
+        "primary_image_url",
+      ],
+    });
+
+    // Use first product's image if collection has no image
+    let collectionImage = collection.getDataValue('collection_image');
+    if (!collectionImage && products.length > 0) {
+      collectionImage = products[0].primary_image_url;
+    }
+
+    return res.status(HTTP_STATUS.OK).json({
+      type: RESPONSE_TYPES.SUCCESS,
+      message: RESPONSE_MESSAGES.COLLECTION.UPDATED,
+      data: {
+        ...collection.toJSON(),
+        collection_image: collectionImage ? await getSignedDownloadUrl(collectionImage) : null,
+        products: {
+          total_products: products.length,
+          total_products_worth: +products.reduce((acc: any, product: any) => 
+            parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
+        },
+      },
+      status: HTTP_STATUS.OK,
+    });
+  } catch (error) {
+    // Clean up uploaded image if operation failed
+    if (uploadedImageUrl) {
+      try {
+        const key = uploadedImageUrl.split("/").slice(-2).join("/");
+        await deleteFromS3(key);
+      } catch (deleteError) {
+        console.error("Error deleting uploaded image after update failure:", deleteError);
+      }
+    }
+
+    console.error("Error updating collection:", error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      type: RESPONSE_TYPES.ERROR,
+      message: RESPONSE_MESSAGES.GENERIC.INTERNAL_SERVER_ERROR,
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+    });
+  }
+};
