@@ -10,7 +10,10 @@ import express, {
 } from "express";
 
 import { authenticateToken } from '../middleware/authMiddleware.js';
-import { upload } from "../controllers/collectionController.js";
+import {
+  updateCollection,
+  upload
+} from '../controllers/collectionController.js';
 
 const router: Router = express.Router();
 
@@ -69,6 +72,8 @@ router.get(
   "/product/:id",
   collectionController.getProductCollections as RequestHandler
 );
+
+router.put('/:id', authenticateToken, upload.single('collection_image'), updateCollection);
 
 export default router;
 
