@@ -21,7 +21,7 @@ export class Space extends Model {
 export const initSpaceModel = (sequelize: Sequelize) => {
   Space.init({
     space_id: {
-      type: DataTypes.INTEGER,  
+      type: DataTypes.INTEGER, 
       autoIncrement: true,
       primaryKey: true,
       field: 'space_id'
