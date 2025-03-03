@@ -136,24 +136,9 @@ export const register = async (req: AuthRequest, res: Response): Promise<Respons
     }
 
     // Check if user exists with the same phone number
-    if (phone_number) {
-      const existingUserByPhone = await User.findOne({ where: { phone_number } });
-      if (existingUserByPhone) {
-        console.log('User already exists with phone number:', phone_number);
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({
-          error: "User with this phone number already exists"
-        });
-      }
-    }
 
     // Check if username is already taken
-    const existingUserByUsername = await User.findOne({ where: { username } });
-    if (existingUserByUsername) {
-      console.log('User already exists with username:', username);
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        error: "Username is already taken"
-      });
-    }
+   
 
     // Hash password
     const salt = await bcrypt.genSalt(10);
