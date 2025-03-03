@@ -13,4 +13,5 @@ export declare const createSpace: (req: SpaceRequest, res: Response) => Promise<
 export declare const getSpaceById: (req: SpaceRequest, res: Response) => Promise<Response>;
 export declare const getUserSpaces: (req: any, res: Response) => Promise<Response>;
 export declare const getSpaceProducts: (req: any, res: Response) => Promise<Response>;
+export declare const updateSpace: (req: SpaceRequest, res: Response) => Promise<Response>;
 export {};

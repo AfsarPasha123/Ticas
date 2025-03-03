@@ -22,7 +22,7 @@ const fileFilter = (
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {
-  const allowedTypes = ["image/jpeg", "image/jpg",  "image/png", "image/gif"];
+  const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
@@ -49,7 +49,6 @@ interface SpaceRequest extends AuthenticatedRequest {
   file?: Express.Multer.File;
 }
 
-// Function to handle creating a new space
 export const createSpace = async (
   req: SpaceRequest,
   res: Response
@@ -63,10 +62,7 @@ export const createSpace = async (
     const space_image = req.file;
 
     if (!space_name) {
-      console.log(
-        "Missing Fields - space_name:",
-        space_name,
-      );
+      console.log("Missing Fields - space_name:", space_name);
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         status: HTTP_STATUS.BAD_REQUEST,
         type: RESPONSE_TYPES.ERROR,
@@ -75,7 +71,6 @@ export const createSpace = async (
       });
     }
 
-    // Check if user exists
     const userId = req.user!.user_id;
     const user = await User.findByPk(userId);
     if (!user) {
@@ -85,29 +80,28 @@ export const createSpace = async (
       });
     }
 
-    // Upload image to S3 if provided
     let key: string | null = null;
     if (space_image) {
-          const fileExtension = path.extname(space_image.originalname);
-          key = `spaces/${userId}/${Date.now()}${fileExtension}`;
-          uploadedImageUrl = await uploadToS3(space_image, key);
-        }
-
+      const fileExtension = path.extname(space_image.originalname);
+      key = `spaces/${userId}/${Date.now()}${fileExtension}`;
+      uploadedImageUrl = await uploadToS3(space_image, key);
+    }
 
     const spaceData = {
       space_name,
       description,
       owner_id: userId,
-      space_image: key || undefined,
+      space_image: key || null,
     };
 
     const newSpace = await Space.create(spaceData);
-spaceCreated = true;
+    spaceCreated = true;
 
-if (!newSpace.space_id) {
-  throw new Error("Space was created but no ID was generated");
-}
-const createdSpace = await Space.findByPk(newSpace.space_id);
+    if (!newSpace.space_id) {
+      throw new Error("Space was created but no ID was generated");
+    }
+
+    const createdSpace = await Space.findByPk(newSpace.space_id);
     if (!createdSpace) {
       throw new Error("Space was created but could not be retrieved");
     }
@@ -121,16 +115,12 @@ const createdSpace = await Space.findByPk(newSpace.space_id);
       },
     });
   } catch (error) {
-    // If we uploaded an image but space creation failed, delete the image
     if (uploadedImageUrl && !spaceCreated) {
       try {
         const key = uploadedImageUrl.split("/").slice(-2).join("/");
         await deleteFromS3(key);
       } catch (deleteError) {
-        console.error(
-          "Error deleting image after failed space creation:",
-          deleteError
-        );
+        console.error("Error deleting image after failed space creation:", deleteError);
       }
     }
 
@@ -150,12 +140,6 @@ export const getSpaceById = async (
   try {
     const { id } = req.params;
     const userId = req.user!.user_id;
-    if (!id) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        status: RESPONSE_TYPES.ERROR,
-        message: RESPONSE_MESSAGES.SPACE.INVALID_ID,
-      });
-    }
 
     const space = await Space.findOne({
       where: { space_id: id, owner_id: userId },
@@ -167,24 +151,20 @@ export const getSpaceById = async (
       });
     }
 
-    const getProducts = await Product.findAll({
+    const products = await Product.findAll({
       where: { space_id: id, owner_id: userId },
-      attributes: [
-        "product_id",
-        "product_name",
-        "description",
-        "price",
-        "primary_image_url",
-        "donation_status", // Include donation status in the response
-      ],
+      attributes: ["product_id", "product_name", "description", "price", "primary_image_url", "donation_status"],
+      order: [['created_at', 'DESC']]
     });
 
-    // Customize the JSON response
-    const customizedProducts = await Promise.all(getProducts.map(async (product) => {
+    let spaceImage = space.getDataValue('space_image');
+    if (!spaceImage && products.length > 0) {
+      spaceImage = products[0].primary_image_url;
+    }
+
+    const customizedProducts = await Promise.all(products.map(async (product) => {
       const productJSON = product.toJSON();
-      if (!productJSON.donation_status) {
-        delete productJSON.donation_status;
-      }
+      if (!productJSON.donation_status) delete productJSON.donation_status;
       return {
         ...productJSON,
         primary_image_url: product?.primary_image_url ? await getSignedDownloadUrl(product?.primary_image_url!) : null,
@@ -196,11 +176,12 @@ export const getSpaceById = async (
       message: RESPONSE_MESSAGES.SPACE.FETCH_SUCCESS,
       data: {
         ...space.toJSON(),
-        space_image: space.getDataValue('space_image') ? await getSignedDownloadUrl(space.getDataValue('space_image')!) : null,
+        space_image: spaceImage ? await getSignedDownloadUrl(spaceImage) : null,
         products: {
           total_products: customizedProducts.length,
-          total_products_worth: +customizedProducts.reduce((acc: any, product: any) => parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
-          total_categories: 0,  // TODO : Add total categories later
+          total_products_worth: +customizedProducts.reduce((acc: any, product: any) => 
+            parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
+          total_categories: 0,
         },
       },
     });
@@ -212,56 +193,50 @@ export const getSpaceById = async (
     });
   }
 };
+
 export const getUserSpaces = async (req: any, res: Response): Promise<Response> => {
   try {
-    const owner_id = req?.user?.user_id
+    const owner_id = req?.user?.user_id;
     const spaces = await Space.findAll({
-      where: { owner_id: req.user!.user_id }, // Use the authenticated user's ID
+      where: { owner_id },
     });
 
-    if (!spaces) {
+    if (!spaces.length) {
       return res.status(HTTP_STATUS.NOT_FOUND).json({
         status: RESPONSE_TYPES.ERROR,
         message: RESPONSE_MESSAGES.SPACE.NOT_FOUND,
-      })
+      });
     }
 
-      const signedUrls = await Promise.all(
-        spaces.map(async (item) => {
-          const spaceImage = item.getDataValue('space_image');
-          if (spaceImage) {
-            const signedUrl = spaceImage ? await getSignedDownloadUrl(spaceImage) : null;
-            console.log(`Signed URL for ${spaceImage}: ${signedUrl}`);
-            return signedUrl;
-          } else {
-            console.log(`No space_image for item with ID ${item.getDataValue('space_id')}`);
-            return null;
-          }
-        })
-      );
+    const spaceData = await Promise.all(
+      spaces.map(async (space) => {
+        const products = await Product.findAll({
+          where: { space_id: space.getDataValue("space_id"), owner_id },
+          order: [['created_at', 'DESC']]
+        });
 
-      const spaceData = await Promise.all(
-        spaces.map(async (item, index) => {
-          
-          const getProducts = await Product.findAll({
-            where: { space_id: item.getDataValue("space_id"), owner_id: owner_id },
-          });
-          return {
-            ...item.toJSON(),
-            space_image: signedUrls[index] || item.getDataValue('space_image'), // Use the signed URL if available, otherwise use the original value
-            products: {
-              total_products: getProducts.length,
-              total_products_worth: +getProducts.reduce((acc: any, product: any) => parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
-            },
-          };
-        })
-      );
+        let spaceImage = space.getDataValue('space_image');
+        if (!spaceImage && products.length > 0) {
+          spaceImage = products[0].primary_image_url;
+        }
+
+        return {
+          ...space.toJSON(),
+          space_image: spaceImage ? await getSignedDownloadUrl(spaceImage) : null,
+          products: {
+            total_products: products.length,
+            total_products_worth: +products.reduce((acc: any, product: any) => 
+              parseFloat(acc) + parseFloat(product.price), 0).toFixed(2),
+          },
+        };
+      })
+    );
 
     return res.status(HTTP_STATUS.OK).json({
       status: RESPONSE_TYPES.SUCCESS,
       message: RESPONSE_MESSAGES.SPACE.FETCH_SUCCESS,
       data: spaceData,
-  });
+    });
   } catch (error) {
     console.error("Error fetching user spaces:", error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
@@ -271,11 +246,11 @@ export const getUserSpaces = async (req: any, res: Response): Promise<Response> 
   }
 };
 
-// Get all products in a space
 export const getSpaceProducts = async (req: any, res: Response): Promise<Response> => {
   try {
-    const space_id  = parseInt(req.params.id);
+    const space_id = parseInt(req.params.id);
     const userId = req.user!.user_id;
+    
     if (!space_id) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         status: RESPONSE_TYPES.ERROR,
@@ -284,7 +259,7 @@ export const getSpaceProducts = async (req: any, res: Response): Promise<Respons
     }
 
     const space = await Space.findOne({
-      where: { space_id: space_id, owner_id: userId },
+      where: { space_id, owner_id: userId },
     });
     if (!space) {
       return res.status(HTTP_STATUS.NOT_FOUND).json({
@@ -292,25 +267,16 @@ export const getSpaceProducts = async (req: any, res: Response): Promise<Respons
         message: RESPONSE_MESSAGES.SPACE.NOT_FOUND,
       });
     }
-
+    
     const products = await Product.findAll({
-      where: { space_id: space_id, owner_id: userId },
-      attributes: [
-        "product_id",
-        "product_name",
-        "description",
-        "price",
-        "primary_image_url",
-        "donation_status", // Include donation status in the response
-      ],
+      where: { space_id, owner_id: userId },
+      attributes: ["product_id", "product_name", "description", "price", "primary_image_url", "donation_status"],
+      order: [['created_at', 'DESC']]
     });
 
-    // Customize the JSON response
     const customizedProducts = await Promise.all(products.map(async (product) => {
       const productJSON = product.toJSON();
-      if (!productJSON.donation_status) {
-        delete productJSON.donation_status;
-      }
+      if (!productJSON.donation_status) delete productJSON.donation_status;
       return {
         ...productJSON,
         primary_image_url: product?.primary_image_url ? await getSignedDownloadUrl(product?.primary_image_url!) : null,
@@ -320,13 +286,106 @@ export const getSpaceProducts = async (req: any, res: Response): Promise<Respons
     return res.status(HTTP_STATUS.OK).json({
       status: RESPONSE_TYPES.SUCCESS,
       message: RESPONSE_MESSAGES.GENERIC.FETCH_SUCCESS,
-      data: customizedProducts, // Use customized products
+      data: customizedProducts,
     });
   } catch (error) {
     console.error("Error fetching space products:", error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       status: RESPONSE_TYPES.ERROR,
       message: RESPONSE_MESSAGES.GENERIC.INTERNAL_SERVER_ERROR,
+    });
+  }
+};
+
+// Add updateSpace function after getSpaceProducts
+export const updateSpace = async (
+  req: SpaceRequest,
+  res: Response
+): Promise<Response> => {
+  let uploadedImageUrl: string | null = null;
+
+  try {
+    const space_id = parseInt(req.params.id);
+    const userId = req.user!.user_id;
+    const { space_name, description } = req.body;
+    const space_image = req.file;
+
+    const space = await Space.findOne({
+      where: { space_id, owner_id: userId },
+    });
+
+    if (!space) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        status: RESPONSE_TYPES.ERROR,
+        message: RESPONSE_MESSAGES.SPACE.NOT_FOUND,
+      });
+    }
+
+    let key = space.getDataValue('space_image');
+    if (space_image) {
+      // Delete old image if exists
+      if (key && key.startsWith('spaces/')) {
+        try {
+          await deleteFromS3(key);
+        } catch (error) {
+          console.error("Error deleting old space image:", error);
+        }
+      }
+      
+      // Upload new image
+      const fileExtension = path.extname(space_image.originalname);
+      key = `spaces/${userId}/${Date.now()}${fileExtension}`;
+      uploadedImageUrl = await uploadToS3(space_image, key);
+    }
+
+    const updateData: any = {};
+    if (space_name) updateData.space_name = space_name;
+    if (description !== undefined) updateData.description = description;
+    if (key) updateData.space_image = key;
+
+    await space.update(updateData);
+
+    // Get latest space data with products
+    const products = await Product.findAll({
+      where: { space_id, owner_id: userId },
+      order: [['created_at', 'DESC']]
+    });
+
+    let spaceImage = space.getDataValue('space_image');
+    if (!spaceImage && products.length > 0) {
+      spaceImage = products[0].primary_image_url;
+    }
+
+    const updatedSpace = await Space.findByPk(space_id);
+    if (!updatedSpace) {
+      throw new Error("Updated space could not be retrieved");
+    }
+
+    return res.status(HTTP_STATUS.OK).json({
+      status: RESPONSE_TYPES.SUCCESS,
+      message: RESPONSE_MESSAGES.GENERIC.UPDATED,
+      data: {
+        ...updatedSpace.toJSON(),
+        space_image: spaceImage ? await getSignedDownloadUrl(spaceImage) : null,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating space:", error);
+    
+    // Clean up uploaded image if operation failed
+    if (uploadedImageUrl) {
+      try {
+        const key = uploadedImageUrl.split("/").slice(-2).join("/");
+        await deleteFromS3(key);
+      } catch (deleteError) {
+        console.error("Error deleting uploaded image after update failure:", deleteError);
+      }
+    }
+
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      status: RESPONSE_TYPES.ERROR,
+      message: RESPONSE_MESSAGES.GENERIC.INTERNAL_SERVER_ERROR,
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 };
