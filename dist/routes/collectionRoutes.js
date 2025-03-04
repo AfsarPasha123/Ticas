@@ -36,7 +36,7 @@ router.get("/:id", collectionController.getCollectionDetails);
 // Get all products exist in a collection
 router.get("/:id/products", collectionController.getCollectionProducts);
 // Get collections for a user
-router.get("/user", collectionController.getUserCollections);
+router.get("/user/collections", collectionController.getUserCollections);
 // Get all collections that a product exist in.
 router.get("/product/:id", collectionController.getProductCollections);
 router.put('/:id', authenticateToken, upload.single('collection_image'), updateCollection);
