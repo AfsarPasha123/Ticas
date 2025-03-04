@@ -2,7 +2,7 @@ import * as collectionController from "../controllers/collectionController.js";
 import { HTTP_STATUS, RESPONSE_MESSAGES, RESPONSE_TYPES } from "../constants/responseConstants.js";
 import express from "express";
 import { authenticateToken } from '../middleware/authMiddleware.js';
-import { updateCollection, upload } from '../controllers/collectionController.js';
+import { updateCollection, upload, deleteCollection } from '../controllers/collectionController.js';
 const router = express.Router();
 // Comprehensive logging middleware
 router.use((req, _res, next) => {
@@ -36,9 +36,10 @@ router.get("/:id", collectionController.getCollectionDetails);
 // Get all products exist in a collection
 router.get("/:id/products", collectionController.getCollectionProducts);
 // Get collections for a user
-router.get("/user/collections", collectionController.getUserCollections);
+router.get("/user", collectionController.getUserCollections);
 // Get all collections that a product exist in.
 router.get("/product/:id", collectionController.getProductCollections);
 router.put('/:id', authenticateToken, upload.single('collection_image'), updateCollection);
+router.delete("/:id", authenticateToken, deleteCollection);
 export default router;
 //# sourceMappingURL=collectionRoutes.js.map

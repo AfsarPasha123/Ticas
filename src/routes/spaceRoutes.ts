@@ -1,5 +1,14 @@
 import { ListBucketsCommand, S3Client } from '@aws-sdk/client-s3';
-import { createSpace, getSpaceById, getSpaceProducts, getUserSpaces, upload, updateSpace } from '../controllers/spaceController.js';
+import { 
+        createSpace, 
+        getSpaceById, 
+        getSpaceProducts, 
+        getUserSpaces, 
+        upload, 
+        updateSpace,
+        deleteSpace 
+} from '../controllers/spaceController.js';
+
 import express, { Router } from 'express';
 
 import type { RequestHandler } from 'express';
@@ -50,4 +59,6 @@ router.get('/:id', getSpaceById as RequestHandler);
 
 router.put("/:id", authenticateToken, upload.single("space_image"), updateSpace);
 
+
+router.delete("/:id", authenticateToken, deleteSpace);
 export default router;

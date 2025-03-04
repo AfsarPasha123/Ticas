@@ -579,3 +579,77 @@ export const updateCollection = async (
     });
   }
 };
+
+export const deleteCollection = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<Response> => {
+  try {
+    const collection_id = parseInt(req.params.id);
+    const owner_id = req.user?.user_id;
+
+    if (!owner_id) {
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+        type: RESPONSE_TYPES.ERROR,
+        message: RESPONSE_MESSAGES.AUTH.TOKEN_REQUIRED,
+        status: HTTP_STATUS.UNAUTHORIZED,
+      });
+    }
+
+    if (isNaN(collection_id)) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        type: RESPONSE_TYPES.ERROR,
+        message: RESPONSE_MESSAGES.COLLECTION.INVALID_DATA,
+        status: HTTP_STATUS.BAD_REQUEST,
+      });
+    }
+
+    const collection = await Collection.findOne({
+      where: { collection_id, owner_id },
+    });
+
+    if (!collection) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        type: RESPONSE_TYPES.ERROR,
+        message: RESPONSE_MESSAGES.COLLECTION.NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND,
+      });
+    }
+
+    // Remove collection reference from products
+    await Product.update(
+      { 
+        collection_ids: sequelize.literal(`JSON_REMOVE(collection_ids, JSON_UNQUOTE(JSON_SEARCH(collection_ids, 'one', '${collection_id}')))`) 
+      },
+      { 
+        where: sequelize.literal(`JSON_CONTAINS(collection_ids, '${collection_id}')`) 
+      }
+    );
+
+    // Delete collection image from S3 if exists
+    const collectionImage = collection.getDataValue('collection_image');
+    if (collectionImage && collectionImage.startsWith('collections/')) {
+      try {
+        await deleteFromS3(collectionImage);
+      } catch (error) {
+        console.error("Error deleting collection image from S3:", error);
+      }
+    }
+
+    // Delete the collection
+    await collection.destroy();
+
+    return res.status(HTTP_STATUS.OK).json({
+      type: RESPONSE_TYPES.SUCCESS,
+      message: RESPONSE_MESSAGES.COLLECTION.DELETED,
+      status: HTTP_STATUS.OK,
+    });
+  } catch (error) {
+    console.error("Error deleting collection:", error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      type: RESPONSE_TYPES.ERROR,
+      message: RESPONSE_MESSAGES.GENERIC.INTERNAL_SERVER_ERROR,
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+    });
+  }
+};

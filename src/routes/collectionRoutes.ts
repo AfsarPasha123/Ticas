@@ -12,7 +12,8 @@ import express, {
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import {
   updateCollection,
-  upload
+  upload,
+  deleteCollection
 } from '../controllers/collectionController.js';
 
 const router: Router = express.Router();
@@ -63,7 +64,7 @@ router.get(
 
 // Get collections for a user
 router.get(
-  "/user/collections",
+  "/user",
   collectionController.getUserCollections as RequestHandler
 );
 
@@ -74,6 +75,8 @@ router.get(
 );
 
 router.put('/:id', authenticateToken, upload.single('collection_image'), updateCollection);
+
+router.delete("/:id", authenticateToken, deleteCollection);
 
 export default router;
 
