@@ -323,4 +323,53 @@ export const updateSpace = async (req, res) => {
         });
     }
 };
+export const deleteSpace = async (req, res) => {
+    try {
+        const space_id = parseInt(req.params.id);
+        const userId = req.user.user_id;
+        if (!space_id) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
+                status: RESPONSE_TYPES.ERROR,
+                message: RESPONSE_MESSAGES.SPACE.INVALID_ID,
+            });
+        }
+        const space = await Space.findOne({
+            where: { space_id, owner_id: userId },
+        });
+        if (!space) {
+            return res.status(HTTP_STATUS.NOT_FOUND).json({
+                status: RESPONSE_TYPES.ERROR,
+                message: RESPONSE_MESSAGES.SPACE.NOT_FOUND,
+            });
+        }
+        // Delete space image from S3 if exists
+        const spaceImage = space.getDataValue('space_image');
+        if (spaceImage && spaceImage.startsWith('spaces/')) {
+            try {
+                await deleteFromS3(spaceImage);
+            }
+            catch (error) {
+                console.error("Error deleting space image from S3:", error);
+            }
+        }
+        // Delete all products associated with this space
+        await Product.destroy({
+            where: { space_id, owner_id: userId }
+        });
+        // Delete the space
+        await space.destroy();
+        return res.status(HTTP_STATUS.OK).json({
+            status: RESPONSE_TYPES.SUCCESS,
+            message: RESPONSE_MESSAGES.SPACE.DELETED,
+        });
+    }
+    catch (error) {
+        console.error("Error deleting space:", error);
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+            status: RESPONSE_TYPES.ERROR,
+            message: RESPONSE_MESSAGES.GENERIC.INTERNAL_SERVER_ERROR,
+            error: error instanceof Error ? error.message : "Unknown error",
+        });
+    }
+};
 //# sourceMappingURL=spaceController.js.map
