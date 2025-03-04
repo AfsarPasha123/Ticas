@@ -64,7 +64,7 @@ router.get(
 
 // Get collections for a user
 router.get(
-  "/user",
+  "/user/collections",
   collectionController.getUserCollections as RequestHandler
 );
 
