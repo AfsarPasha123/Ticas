@@ -94,8 +94,7 @@ export const createProduct = async (
       space_id,
       primary_image_url: key,
       collection_ids: collection_id || [],
-      owner_id: req.user?.user_id || 0,
-      tag_ids: processedTagIds,
+      owner_id: req.user?.user_id || 0
     }, { transaction });
 
     // If tag_ids are provided, associate tags with the product
@@ -124,7 +123,7 @@ export const createProduct = async (
     const productJSON = createdProduct!.toJSON();
     return res.status(HTTP_STATUS.CREATED).json({
       type: RESPONSE_TYPES.SUCCESS,
-      message: RESPONSE_MESSAGES.GENERIC.CREATED,
+      message: RESPONSE_MESSAGES.PRODUCT.CREATED,
       data: {
         ...productJSON,
         primary_image_url: primary_image_url,
@@ -162,8 +161,7 @@ export const getAllProducts = async (
         "price",
         "primary_image_url",
         "donation_status",
-        "space_id",
-        "tag_ids"
+        "space_id"
       ],
       include: [{
         model: Tag,
@@ -333,7 +331,7 @@ export const updateProduct = async (
       await transaction.rollback();
       return res.status(HTTP_STATUS.NOT_FOUND).json({
         type: RESPONSE_TYPES.ERROR,
-        message: RESPONSE_MESSAGES.GENERIC.NOT_FOUND,
+        message: RESPONSE_MESSAGES.PRODUCT.NOT_FOUND,
         status: HTTP_STATUS.NOT_FOUND,
       });
     }
@@ -382,58 +380,70 @@ export const updateProduct = async (
       }
     }
 
-    // Prepare tag_ids for storage
-    const processedTagIds = tag_ids 
-      ? (Array.isArray(tag_ids) 
-          ? tag_ids.map(Number) 
-          : [Number(tag_ids)])
-      : [];
+    // Update the product
+    const [numAffected] = await Product.update({
+      product_name,
+      description: description || product.description,
+      price: price || product.price,
+      space_id: space_id || product.space_id,
+      primary_image_url: key || product.primary_image_url,
+      collection_ids: collection_id || product.collection_ids,
+    }, {
+      where: { product_id, owner_id: req.user?.user_id },
+      transaction
+    });
 
-    // Handle tag updates
-    if (processedTagIds.length > 0) {
-      // Remove existing tags
+    if (numAffected === 0) {
+      await transaction.rollback();
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        type: RESPONSE_TYPES.ERROR,
+        message: RESPONSE_MESSAGES.PRODUCT.NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND,
+      });
+    }
+
+    // Update tag associations if tag_ids are provided
+    if (tag_ids) {
+      // Remove existing tag associations
       await ProductTag.destroy({
-        where: { 
-          product_id: product.product_id!,
-          tag_id: {
-            [Op.notIn]: processedTagIds
-          }
-        },
+        where: { product_id },
         transaction
       });
-      
-      // Add new tags (skip if already exists)
+
+      // Create new tag associations
+      const processedTagIds = Array.isArray(tag_ids) ? tag_ids.map(Number) : [Number(tag_ids)];
       await Promise.all(processedTagIds.map(async (tagId) => {
-        await ProductTag.findOrCreate({
-          where: {
-            product_id: product.product_id!,
-            tag_id: tagId
-          },
-          transaction
-        });
+        await ProductTag.create({
+          product_id,
+          tag_id: tagId
+        }, { transaction });
       }));
     }
 
-    // Update product with potential tag changes
-    await product.update({
-      product_name: product_name || product.product_name,
-      description: description || product.description,
-      price: price || product.price,
-      primary_image_url: key || product.primary_image_url,
-      space_id: space_id === "null" || space_id === null ? null : (space_id || product.space_id),
-      collection_ids: collection_id || product.collection_ids,
-      tag_ids: processedTagIds || product.tag_ids
-    }, { transaction });
+    // Fetch the updated product with tag associations
+    const updatedProduct = await Product.findByPk(product_id, {
+      include: [{
+        model: Tag,
+        attributes: ['tag_id', 'tag_name'],
+        through: { attributes: [] },
+        as: 'Tags'
+      }],
+      transaction
+    });
 
     await transaction.commit();
 
+    const productJSON = updatedProduct!.toJSON();
     return res.status(HTTP_STATUS.OK).json({
       type: RESPONSE_TYPES.SUCCESS,
-      message: RESPONSE_MESSAGES.GENERIC.UPDATED,
+      message: RESPONSE_MESSAGES.PRODUCT.UPDATED,
       data: {
-        ...product.toJSON(),
+        ...productJSON,
         primary_image_url: primary_image_url,
-        tags: processedTagIds,
+        tags: productJSON.Tags ? productJSON.Tags.map((tag: any) => ({
+          tag_id: tag.tag_id,
+          tag_name: tag.tag_name
+        })) : [],
       },
       status: HTTP_STATUS.OK,
     });

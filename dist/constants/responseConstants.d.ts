@@ -37,6 +37,17 @@ export declare const RESPONSE_MESSAGES: {
         readonly FETCH_SUCCESS: "Spaces retrieved successfully.";
         readonly CREATED_SUCCESSFULLY: "Space created successfully.";
     };
+    readonly PRODUCT: {
+        readonly CREATED: "Product created successfully.";
+        readonly UPDATED: "Product updated successfully.";
+        readonly DELETED: "Product deleted successfully.";
+        readonly NOT_FOUND: "Product not found.";
+        readonly INVALID_DATA: "Invalid product data provided.";
+        readonly ACCESS_DENIED: "Access denied to this product.";
+        readonly FETCH_SUCCESS: "Products retrieved successfully.";
+        readonly TAG_UPDATED: "Product tags updated successfully.";
+        readonly DONATION_STATUS_UPDATED: "Product donation status updated successfully.";
+    };
     readonly COLLECTION: {
         readonly CREATED: "Collection created successfully.";
         readonly UPDATED: "Collection updated successfully.";
