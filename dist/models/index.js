@@ -4,6 +4,8 @@ import { initCollectionModel } from './Collection.js';
 import { initProductModel } from './Product.js';
 import { initSpaceModel } from './Space.js';
 import { initUserModel } from './User.js';
+import { initTagModel } from './Tag.js';
+import { initProductTagModel } from './ProductTag.js';
 const sequelize = new Sequelize({
     dialect: 'mysql',
     host: config.database.host,
@@ -26,6 +28,8 @@ export const User = initUserModel(sequelize);
 export const Space = initSpaceModel(sequelize);
 export const Product = initProductModel(sequelize);
 export const Collection = initCollectionModel(sequelize);
+export const Tag = initTagModel(sequelize);
+export const ProductTag = initProductTagModel(sequelize);
 // Set up associations
 User.hasMany(Space, { foreignKey: 'owner_id' });
 Space.belongsTo(User, { foreignKey: 'owner_id' });
@@ -44,6 +48,19 @@ Collection.belongsToMany(Product, {
     through: 'product_collections',
     foreignKey: 'collection_id',
     otherKey: 'product_id'
+});
+// Tag and Product associations
+Product.belongsToMany(Tag, {
+    through: ProductTag,
+    foreignKey: 'product_id',
+    otherKey: 'tag_id',
+    as: 'Tags'
+});
+Tag.belongsToMany(Product, {
+    through: ProductTag,
+    foreignKey: 'tag_id',
+    otherKey: 'product_id',
+    as: 'Products'
 });
 // Sync database
 const syncDatabase = async () => {

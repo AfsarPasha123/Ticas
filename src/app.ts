@@ -21,6 +21,8 @@ import serpApiSearchRouter from "./controllers/searchProductSerpApi.js";
 // Import routes
 import spaceRoutes from "./routes/spaceRoutes.js";
 
+import tagRoutes from './routes/tagRoutes.js';
+
 // Robust Environment Configuration
 function loadEnvironmentConfig() {
   const __filename = fileURLToPath(import.meta.url);
@@ -199,11 +201,13 @@ app.use("/products", productRoutes);
 app.use("/collections", collectionRoutes);
 app.use("/auth", authRoutes);
 app.use("/profile", profileRoutes);
-app.use("/search", searchRoutes);
-app.use("/search-product",serpApiSearchRouter)
+app.use("/search", searchRoutes); // Updated path to match our API convention
+app.use("/search-product", serpApiSearchRouter);
 
 // Add donation routes
-app.use("/donations", donationRoutes); // Add the donation routes here
+app.use("/donations", donationRoutes);
+
+app.use('/tags', tagRoutes);
 
 // Centralized route logging
 app._router.stack.forEach((middleware: any) => {
