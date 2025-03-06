@@ -1,20 +1,20 @@
-import { Collection, Product, Space } from "../models/index.js";
+import { Collection, Product, Space, Tag, sequelize, ProductTag } from "../models/index.js";
 import { HTTP_STATUS, RESPONSE_MESSAGES, RESPONSE_TYPES, } from "../constants/responseConstants.js";
 import { getSignedDownloadUrl, uploadToS3 } from "../services/s3Service.js";
-import { Sequelize } from 'sequelize';
-import { Op } from "sequelize";
+import { Op } from 'sequelize';
 import path from "path";
 // Create a new product
 export const createProduct = async (req, res) => {
+    const transaction = await sequelize.transaction();
     try {
-        const { product_name, description, price, space_id } = req.body;
+        const { product_name, description, price, space_id, tag_ids } = req.body;
         const image = req.file;
         let { collection_id } = req.body;
         console.log("Request body:", req.body);
         console.log("Request file:", req.file);
-        console.log("coming in here?");
         if (!product_name || !image) {
             console.log("Missing fields:", { product_name, image });
+            await transaction.rollback();
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 type: RESPONSE_TYPES.ERROR,
                 message: RESPONSE_MESSAGES.GENERIC.MISSING_FIELDS,
@@ -23,8 +23,9 @@ export const createProduct = async (req, res) => {
         }
         // Check if space exists
         if (space_id) {
-            const space = await Space.findByPk(space_id);
+            const space = await Space.findByPk(space_id, { transaction });
             if (!space) {
+                await transaction.rollback();
                 return res.status(HTTP_STATUS.NOT_FOUND).json({
                     type: RESPONSE_TYPES.ERROR,
                     message: RESPONSE_MESSAGES.SPACE.NOT_FOUND,
@@ -42,8 +43,9 @@ export const createProduct = async (req, res) => {
         // Check if collection exists
         if (Array.isArray(collection_id)) {
             for (const id of collection_id) {
-                const collection = await Collection.findByPk(parseInt(id));
+                const collection = await Collection.findByPk(parseInt(id), { transaction });
                 if (!collection) {
+                    await transaction.rollback();
                     return res.status(HTTP_STATUS.NOT_FOUND).json({
                         type: RESPONSE_TYPES.ERROR,
                         message: RESPONSE_MESSAGES.COLLECTION.NOT_FOUND,
@@ -59,26 +61,59 @@ export const createProduct = async (req, res) => {
             key = `products/${Date.now()}${fileExtension}`;
             primary_image_url = await uploadToS3(image, key);
         }
+        // Prepare tag_ids for storage
+        const processedTagIds = tag_ids
+            ? (Array.isArray(tag_ids)
+                ? tag_ids.map(Number)
+                : [Number(tag_ids)])
+            : [];
         const product = await Product.create({
             product_name,
             description: description || "",
             price,
             space_id,
             primary_image_url: key,
-            collection_ids: collection_id ? collection_id : [],
-            owner_id: req.user?.user_id || 0, // This should be handled by auth middleware
+            collection_ids: collection_id || [],
+            owner_id: req.user?.user_id || 0,
+            tag_ids: processedTagIds,
+        }, { transaction });
+        // If tag_ids are provided, associate tags with the product
+        if (processedTagIds.length > 0) {
+            await Promise.all(processedTagIds.map(async (tagId) => {
+                await ProductTag.create({
+                    product_id: product.product_id,
+                    tag_id: tagId
+                }, { transaction });
+            }));
+        }
+        // Fetch the created product with tag associations
+        const createdProduct = await Product.findByPk(product.product_id, {
+            include: [{
+                    model: Tag,
+                    attributes: ['tag_id', 'tag_name'],
+                    through: { attributes: [] },
+                    as: 'Tags'
+                }],
+            transaction
         });
+        await transaction.commit();
+        const productJSON = createdProduct.toJSON();
         return res.status(HTTP_STATUS.CREATED).json({
             type: RESPONSE_TYPES.SUCCESS,
             message: RESPONSE_MESSAGES.GENERIC.CREATED,
             data: {
-                ...product.toJSON(),
+                ...productJSON,
                 primary_image_url: primary_image_url,
+                tags: productJSON.Tags ? productJSON.Tags.map((tag) => ({
+                    tag_id: tag.tag_id,
+                    tag_name: tag.tag_name
+                })) : []
             },
             status: HTTP_STATUS.CREATED,
         });
     }
     catch (error) {
+        await transaction.rollback();
         console.error("Error creating product:", error);
         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
             type: RESPONSE_TYPES.ERROR,
@@ -99,11 +134,17 @@ export const getAllProducts = async (_req, res) => {
                 "description",
                 "price",
                 "primary_image_url",
-                "donation_status", // Include donation status in the response
+                "donation_status",
                 "space_id",
+                "tag_ids"
             ],
+            include: [{
+                    model: Tag,
+                    attributes: ['tag_name'],
+                    through: { attributes: [] },
+                    as: 'Tags'
+                }]
         });
-        console.log("Products", products);
         // Calculate the total worth of all products
         const totalWorth = products.reduce((acc, product) => acc + parseFloat(product.price?.toString() || '0'), 0);
         // Calculate the total product count
@@ -117,30 +158,27 @@ export const getAllProducts = async (_req, res) => {
         // Customize the JSON response
         const customizedProducts = await Promise.all(products.map(async (product) => {
             let product_space = null;
-            if (product.toJSON().space_id) {
+            if (product.space_id) {
                 product_space = await Space.findOne({
-                    where: { owner_id, space_id: product.toJSON().space_id },
+                    where: { owner_id, space_id: product.space_id },
                     attributes: ["space_name"],
                 });
             }
             const productJSON = product.toJSON();
-            if (!productJSON.donation_status) {
-                delete productJSON.donation_status;
-            }
             return {
                 ...productJSON,
                 primary_image_url: product?.primary_image_url ? await getSignedDownloadUrl(product?.primary_image_url) : null,
                 product_space: product_space ? product_space?.getDataValue("space_name") : null,
+                tags: productJSON.Tags ? productJSON.Tags.map((tag) => tag.tag_name) : [],
             };
         }));
-        console.log("Customized Products", customizedProducts);
         return res.status(HTTP_STATUS.OK).json({
             type: RESPONSE_TYPES.SUCCESS,
             message: RESPONSE_MESSAGES.GENERIC.FETCH_SUCCESS,
             data: {
-                products: customizedProducts, // Use customized products
-                totalWorth: totalWorth.toFixed(2), // Include total worth in the response
-                totalCount: totalCount, // Include total product count in the response
+                products: customizedProducts,
+                totalWorth: totalWorth.toFixed(2),
+                totalCount: totalCount,
                 total_spaces,
                 total_collections,
             },
@@ -170,6 +208,12 @@ export const getProductById = async (req, res) => {
         }
         const product = await Product.findOne({
             where: { product_id, owner_id },
+            include: [{
+                    model: Tag,
+                    attributes: ['tag_id', 'tag_name'],
+                    through: { attributes: [] },
+                    as: 'Tags'
+                }]
         });
         if (!product) {
             return res.status(HTTP_STATUS.NOT_FOUND).json({
@@ -187,9 +231,6 @@ export const getProductById = async (req, res) => {
             attributes: ["space_name"],
         });
         const productJSON = product.toJSON();
-        if (!productJSON.donation_status) {
-            delete productJSON.donation_status;
-        }
         return res.status(HTTP_STATUS.OK).json({
             type: RESPONSE_TYPES.SUCCESS,
             message: RESPONSE_MESSAGES.GENERIC.FETCH_SUCCESS,
@@ -198,6 +239,10 @@ export const getProductById = async (req, res) => {
                 collection_names: collection.map((item) => item.getDataValue("collection_name")),
                 space_name: space?.getDataValue("space_name"),
                 primary_image_url: product?.primary_image_url ? await getSignedDownloadUrl(product?.primary_image_url) : null,
+                tags: productJSON.Tags ? productJSON.Tags.map((tag) => ({
+                    tag_id: tag.tag_id,
+                    tag_name: tag.tag_name
+                })) : [],
             },
             status: HTTP_STATUS.OK,
         });
@@ -211,21 +256,33 @@ export const getProductById = async (req, res) => {
         });
     }
 };
+// Update product
 export const updateProduct = async (req, res) => {
+    const transaction = await sequelize.transaction();
     try {
         const product_id = parseInt(req.params.id);
-        const { product_name, description, price, space_id } = req.body;
+        const { product_name, description, price, space_id, tag_ids } = req.body;
         const image = req.file;
         let { collection_id } = req.body;
         if (isNaN(product_id)) {
+            await transaction.rollback();
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 type: RESPONSE_TYPES.ERROR,
                 message: RESPONSE_MESSAGES.GENERIC.INVALID_REQUEST,
                 status: HTTP_STATUS.BAD_REQUEST,
             });
         }
-        const product = await Product.findByPk(product_id);
+        const product = await Product.findByPk(product_id, {
+            include: [{
+                    model: Tag,
+                    attributes: ['tag_id', 'tag_name'],
+                    through: { attributes: [] },
+                    as: 'Tags' // Added alias
+                }],
+            transaction
+        });
         if (!product) {
+            await transaction.rollback();
             return res.status(HTTP_STATUS.NOT_FOUND).json({
                 type: RESPONSE_TYPES.ERROR,
                 message: RESPONSE_MESSAGES.GENERIC.NOT_FOUND,
@@ -249,8 +306,9 @@ export const updateProduct = async (req, res) => {
         // Check if collection exists
         if (Array.isArray(collection_id)) {
             for (const id of collection_id) {
-                const collection = await Collection.findByPk(parseInt(id));
+                const collection = await Collection.findByPk(parseInt(id), { transaction });
                 if (!collection) {
+                    await transaction.rollback();
                     return res.status(HTTP_STATUS.NOT_FOUND).json({
                         type: RESPONSE_TYPES.ERROR,
                         message: RESPONSE_MESSAGES.COLLECTION.NOT_FOUND,
@@ -261,8 +319,9 @@ export const updateProduct = async (req, res) => {
         }
         // Check if the new space exists
         if (space_id !== null && space_id !== "null" && space_id !== undefined) {
-            const space = await Space.findByPk(space_id);
+            const space = await Space.findByPk(space_id, { transaction });
             if (!space) {
+                await transaction.rollback();
                 return res.status(HTTP_STATUS.NOT_FOUND).json({
                     type: RESPONSE_TYPES.ERROR,
                     message: RESPONSE_MESSAGES.SPACE.NOT_FOUND,
@@ -270,79 +329,59 @@ export const updateProduct = async (req, res) => {
                 });
             }
         }
-        // Handle space updates
-        if (space_id === null || space_id === "null" || space_id === undefined) {
-            product.space_id = null;
+        // Prepare tag_ids for storage
+        const processedTagIds = tag_ids
+            ? (Array.isArray(tag_ids)
+                ? tag_ids.map(Number)
+                : [Number(tag_ids)])
+            : [];
+        // Handle tag updates
+        if (processedTagIds.length > 0) {
+            // Remove existing tags
+            await ProductTag.destroy({
+                where: {
+                    product_id: product.product_id,
+                    tag_id: {
+                        [Op.notIn]: processedTagIds
+                    }
+                },
+                transaction
+            });
+            // Add new tags (skip if already exists)
+            await Promise.all(processedTagIds.map(async (tagId) => {
+                await ProductTag.findOrCreate({
+                    where: {
+                        product_id: product.product_id,
+                        tag_id: tagId
+                    },
+                    transaction
+                });
+            }));
         }
-        else if (space_id !== product.space_id) {
-            // Remove product from the old space if it exists
-            if (product.space_id) {
-                try {
-                    await Space.update({ products: Sequelize.fn('array_remove', Sequelize.col('products'), product_id) }, { where: { space_id: product.space_id } });
-                }
-                catch (spaceError) {
-                    console.error("Error updating space:", spaceError);
-                }
-            }
-            product.space_id = space_id;
-        }
-        // Update product details
+        // Update product with potential tag changes
         await product.update({
             product_name: product_name || product.product_name,
             description: description || product.description,
             price: price || product.price,
             primary_image_url: key || product.primary_image_url,
             space_id: space_id === "null" || space_id === null ? null : (space_id || product.space_id),
-            collection_ids: collection_id || product.collection_ids
-        });
-        // Handle collection updates
-        if (collection_id) {
-            // Normalize collection_id to array
-            if (!Array.isArray(collection_id)) {
-                collection_id = [collection_id];
-            }
-            collection_id = collection_id.map((id) => parseInt(id, 10));
-            // Validate all new collections exist
-            for (const id of collection_id) {
-                const collection = await Collection.findByPk(id);
-                if (!collection) {
-                    return res.status(HTTP_STATUS.NOT_FOUND).json({
-                        type: RESPONSE_TYPES.ERROR,
-                        message: RESPONSE_MESSAGES.COLLECTION.NOT_FOUND,
-                        status: HTTP_STATUS.NOT_FOUND,
-                    });
-                }
-            }
-            // Find collections to remove (in current but not in new)
-            const collectionsToRemove = (product.collection_ids || [])
-                .filter((id) => !collection_id.includes(id));
-            // Find collections to add (in new but not in current)
-            const collectionsToAdd = collection_id
-                .filter((id) => !(product.collection_ids || []).includes(id));
-            console.log(`Removing product from collections: ${collectionsToRemove}`);
-            console.log(`Adding product to collections: ${collectionsToAdd}`);
-        }
-        // Update product details
-        // Update product details
-        await product.update({
-            product_name: product_name || product.product_name,
-            description: description || product.description,
-            price: price || product.price,
-            primary_image_url: key || product.primary_image_url,
-            space_id: space_id === undefined ? product.space_id : space_id, // Fix this line
-            collection_ids: collection_id || product.collection_ids
-        });
+            collection_ids: collection_id || product.collection_ids,
+            tag_ids: processedTagIds || product.tag_ids
+        }, { transaction });
+        await transaction.commit();
         return res.status(HTTP_STATUS.OK).json({
             type: RESPONSE_TYPES.SUCCESS,
             message: RESPONSE_MESSAGES.GENERIC.UPDATED,
             data: {
                 ...product.toJSON(),
                 primary_image_url: primary_image_url,
+                tags: processedTagIds,
             },
             status: HTTP_STATUS.OK,
         });
     }
     catch (error) {
+        await transaction.rollback();
         console.error("Error updating product:", error);
         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
             type: RESPONSE_TYPES.ERROR,
