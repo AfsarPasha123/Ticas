@@ -41,6 +41,18 @@ export const RESPONSE_MESSAGES = {
         FETCH_SUCCESS: 'Spaces retrieved successfully.',
         CREATED_SUCCESSFULLY: 'Space created successfully.'
     },
+    // Product Messages
+    PRODUCT: {
+        CREATED: 'Product created successfully.',
+        UPDATED: 'Product updated successfully.',
+        DELETED: 'Product deleted successfully.',
+        NOT_FOUND: 'Product not found.',
+        INVALID_DATA: 'Invalid product data provided.',
+        ACCESS_DENIED: 'Access denied to this product.',
+        FETCH_SUCCESS: 'Products retrieved successfully.',
+        TAG_UPDATED: 'Product tags updated successfully.',
+        DONATION_STATUS_UPDATED: 'Product donation status updated successfully.'
+    },
     // Collection Messages
     COLLECTION: {
         CREATED: 'Collection created successfully.',

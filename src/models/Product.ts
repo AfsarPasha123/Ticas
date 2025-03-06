@@ -11,7 +11,6 @@ interface ProductAttributes {
     space_id?: number | null;
     collection_ids?: number[];
     tags?: string[];
-    tag_ids?: number[];
     created_at?: Date;
     updated_at?: Date;
     donation_status?: 'in_donation' | 'donated' | null;
