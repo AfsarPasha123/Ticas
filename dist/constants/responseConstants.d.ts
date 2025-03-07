@@ -14,7 +14,7 @@ export declare const RESPONSE_MESSAGES: {
         readonly REGISTER_SUCCESS: "User registered successfully.";
         readonly INVALID_CREDENTIALS: "Invalid credentials.";
         readonly MISSING_CREDENTIALS: "Email and password are required.";
-        readonly USER_EXISTS: "User already exists.";
+        readonly USER_EXISTS: "User already exists with this email.";
         readonly MISSING_JWT_SECRET: "JWT secret is not configured.";
         readonly INVALID_TOKEN: "Invalid or expired token";
         readonly TOKEN_REFRESH_SUCCESS: "Token refreshed successfully";

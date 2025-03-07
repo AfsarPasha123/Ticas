@@ -18,7 +18,7 @@ export const RESPONSE_MESSAGES = {
         REGISTER_SUCCESS: 'User registered successfully.',
         INVALID_CREDENTIALS: 'Invalid credentials.',
         MISSING_CREDENTIALS: 'Email and password are required.',
-        USER_EXISTS: 'User already exists.',
+        USER_EXISTS: 'User already exists with this email.',
         MISSING_JWT_SECRET: 'JWT secret is not configured.',
         INVALID_TOKEN: 'Invalid or expired token',
         TOKEN_REFRESH_SUCCESS: 'Token refreshed successfully',

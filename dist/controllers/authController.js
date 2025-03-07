@@ -48,6 +48,13 @@ export const login = async (req, res) => {
             status: RESPONSE_TYPES.SUCCESS,
             message: RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS,
             data: {
+                user: {
+                    user_id: user.user_id,
+                    username: user.username,
+                    email: user.email,
+                    profile_image: user.profile_image,
+                    phone_number: user.phone_number
+                },
                 token,
                 refreshToken
             }
@@ -95,8 +102,10 @@ export const register = async (req, res) => {
             const existingUserByEmail = await User.findOne({ where: { email } });
             if (existingUserByEmail) {
                 console.log('User already exists with email:', email);
-                return res.status(HTTP_STATUS.BAD_REQUEST).json({
-                    error: "User with this email already exists"
+                console.error("User with this email already exists");
+                return res.status(HTTP_STATUS.CONFLICT).json({
+                    status: RESPONSE_TYPES.ERROR,
+                    message: RESPONSE_MESSAGES.AUTH.USER_EXISTS
                 });
             }
         }
